@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Lớp học trực tuyến</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0;}
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        input { display: block; margin: 10px auto; padding: 10px; width: 95%; }
+        button { padding: 10px 20px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        #userInfo { display: none; }
+        #examList { list-style: none; padding: 0; text-align: left; }
+        #examList li { margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="loginForm">
+            <h2>Đăng nhập Hệ thống</h2>
+            <input type="email" id="email" placeholder="Email của bạn">
+            <input type="password" id="password" placeholder="Mật khẩu">
+            <button onclick="login()">Đăng nhập</button>
+            <p id="loginError" style="color: red;"></p>
+        </div>
+
+        <div id="userInfo">
+            <p>Chào <b id="userEmail"></b>!</p>
+            <h3>Các bài kiểm tra của bạn:</h3>
+            <ul id="examList"></ul>
+            <button onclick="logout()">Đăng xuất</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // DÁN "CHÌA KHÓA" (firebaseConfig) THẦY ĐÃ LƯU Ở PHẦN 1 VÀO ĐÂY
+        const firebaseConfig = {
+            // dán vào đây
+        };
+
+        // Khởi tạo Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => { document.getElementById('loginError').innerText = "Sai email hoặc mật khẩu!"; });
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+        
+        function showExamsForUser(user) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('userEmail').innerText = user.email;
+
+            const examList = document.getElementById('examList');
+            examList.innerHTML = '<li>Đang tải danh sách bài thi...</li>';
+
+            // Truy vấn các bài thi mà trường 'assignedTo' chứa email của học sinh
+            db.collection("tests").where("assignedTo", "array-contains", user.email).get()
+                .then((querySnapshot) => {
+                    examList.innerHTML = ''; // Xóa dòng "đang tải"
+                    if (querySnapshot.empty) {
+                        examList.innerHTML = '<li>Bạn chưa có bài kiểm tra nào.</li>';
+                        return;
+                    }
+                    querySnapshot.forEach((doc) => {
+                        const exam = doc.data();
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${exam.title}</span> <button onclick="startExam('${doc.id}', '${exam.accessCode}')">Bắt đầu</button>`;
+                        examList.appendChild(li);
+                    });
+                });
+        }
+        
+        function startExam(testId, correctCode) {
+            const userCode = prompt("Vui lòng nhập mã truy cập bài thi:");
+            if (userCode === null) return; // Người dùng nhấn cancel
+
+            if (userCode === correctCode) {
+                // Chuyển hướng đến trang thi và truyền ID của bài thi qua URL
+                window.location.href = `reading.html?testId=${testId}`;
+            } else {
+                alert("Mã truy cập không đúng!");
+            }
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                showExamsForUser(user);
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
