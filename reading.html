@@ -79,7 +79,7 @@
         #timer { background-color: #dc3545; color: white; padding: 8px 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); }
         .settings-icon { width: 24px; height: 24px; cursor: pointer; fill: var(--text-primary); transition: var(--transition-fast); }
         .settings-icon:hover { fill: var(--primary-accent); }
-        .settings-dropdown { 
+        .settings-dropdown {
             position: absolute; top: 60px; right: 20px; z-index: 1002;
             padding: 10px; border-radius: 12px; background: var(--panel-bg-color);
             border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color);
@@ -207,15 +207,15 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-    const firebaseConfig = {
-  apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-  authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-  projectId: "ielts-foundation-6ea9d",
-  storageBucket: "ielts-foundation-6ea9d.firebasestorage.app",
-  messagingSenderId: "296690693780",
-  appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
-  measurementId: "G-CZD89F0FC3"
-};
+        // !!! THẦY HÃY DÁN "CHÌA KHÓA" firebaseConfig CỦA MÌNH VÀO ĐÂY !!!
+        const firebaseConfig = {
+            // apiKey: "...",
+            // authDomain: "...",
+            // projectId: "...",
+        };
+        
+        // !!! THẦY HÃY DÁN URL CỦA APPS SCRIPT WEB APP VÀO ĐÂY !!!
+        const WEB_APP_URL = "URL_APPS_SCRIPT_CUA_THAY";
 
         // Khởi tạo Firebase
         if (!firebase.apps.length) {
@@ -246,6 +246,7 @@
             let questionDataMap = new Map();
             let currentUser = null;
             let currentTestId = null;
+            let enteredCode = null;
 
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
@@ -257,8 +258,6 @@
                 summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`
             };
             RENDERERS.note_completion = RENDERERS.sentence_completion;
-            RENDERERS.table_completion = RENDERERS.sentence_completion; 
-            RENDERERS.multiple_choice_more_answers = RENDERERS.multiple_choice_one_answer;
 
             const updateAnswer = (qNum, value) => {
                 const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
@@ -266,27 +265,7 @@
                 else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
             };
 
-            const showPassageAndQuestions = (passageNum, isInitialLoad = false) => {
-                const passageNumStr = String(passageNum);
-                const panels = [passagePanelEl, questionsPanelEl];
-                const displayContent = () => {
-                    document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
-                    document.getElementById(`passage-container-${passageNumStr}`).style.display = 'block';
-                    document.querySelectorAll(`.question-block[data-passage="${passageNumStr}"]`).forEach(q => q.style.display = 'block');
-                };
-                if (isInitialLoad) { displayContent(); } 
-                else {
-                    panels.forEach(p => p.classList.add('fading'));
-                    setTimeout(() => { displayContent(); panels.forEach(p => p.classList.remove('fading')); }, 150);
-                }
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('hidden', item.dataset.passageNum !== passageNumStr));
-                panels.forEach(p => p.scrollTop = 0);
-            };
-            
-            const handleMouseMove = (e) => { if (!isResizing) return; const container = resizerEl.parentElement; const newLeftWidth = e.clientX - container.offsetLeft; if (newLeftWidth > 200 && (container.offsetWidth - newLeftWidth) > 200) { passagePanelEl.style.width = `${newLeftWidth}px`; questionsPanelEl.style.flex = '1 1 0%'; } };
-            const stopResizing = () => { isResizing = false; document.removeEventListener('mouseup', stopResizing); document.removeEventListener('mousemove', handleMouseMove); };
-            
-            const submitTest = () => {
+            const submitTest = async () => {
                 clearInterval(timerInterval);
                 let score = 0;
                 questionDataMap.forEach((data, qNum) => {
@@ -299,16 +278,119 @@
                 modalScoreEl.textContent = `${score} / ${questionDataMap.size}`;
                 resultModalEl.classList.add('show');
 
-                if (currentUser && currentTestId) {
+                if (currentUser && currentTestId && enteredCode) {
                     db.collection("results").add({
                         studentUid: currentUser.uid,
                         studentEmail: currentUser.email,
+                        studentName: currentUser.displayName || "",
                         testId: currentTestId,
+                        codeUsed: enteredCode,
                         answers: userAnswers,
                         score: score,
                         totalQuestions: questionDataMap.size,
                         submittedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+
+                    try {
+                        await fetch(WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            body: JSON.stringify({
+                                action: "UPDATE_SCORE",
+                                code: enteredCode,
+                                score: score,
+                                totalQuestions: questionDataMap.size,
+                                studentEmail: currentUser.email,
+                                studentName: currentUser.displayName || ""
+                            })
+                        });
+                        console.log("Yêu cầu cập nhật điểm đã được gửi đến Google Sheet.");
+                    } catch (error) {
+                        console.error("Lỗi khi gửi điểm đến Google Sheet:", error);
+                    }
+                }
+            };
+
+            const initializeExam = (examData) => {
+                document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
+                let navHtml = '';
+                examData.questionBlocks.forEach(block => {
+                    const passageNum = block.passage;
+                    const processItem = item => {
+                        navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
+                        questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
+                    };
+                    if (block.items) { block.items.forEach(processItem); } 
+                    else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
+                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
+                        questionDataMap.set(qNum, { answer, type: block.type });
+                    });}
+                });
+                navigationPaneEl.innerHTML = navHtml;
+                passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}">${p.content}</div>`).join('');
+                questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
+                const savedTheme = localStorage.getItem('ielts-theme') || 'light';
+                document.body.classList.toggle('dark', savedTheme === 'dark');
+                document.getElementById('theme-toggle').value = savedTheme;
+                initializeListeners();
+                showPassageAndQuestions("1", true);
+                loadingOverlayEl.style.display = 'none';
+                examContainerEl.style.display = 'flex';
+                let time = examData.timeLimitMinutes * 60;
+                timerInterval = setInterval(() => {
+                    if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
+                    timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+                }, 1000);
+            };
+            
+            const validateAccessCodeAndStartExam = async (user, testId) => {
+                const userCode = prompt("Vui lòng nhập mã làm bài của bạn:");
+                if (!userCode) {
+                    loadingOverlayEl.innerText = "Đã hủy. Vui lòng quay lại trang trước.";
+                    return;
+                }
+                enteredCode = userCode.trim().toUpperCase();
+                const testRef = db.collection("tests").doc(testId);
+                try {
+                    const testData = await db.runTransaction(async (transaction) => {
+                        const testDoc = await transaction.get(testRef);
+                        if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
+                        
+                        const data = testDoc.data();
+                        const codes = data.accessCodes || [];
+                        const codeIndex = codes.findIndex(c => c.code === enteredCode);
+
+                        if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
+                        if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
+
+                        let studentName = "";
+                        const codeInfo = codes[codeIndex];
+
+                        if (codeInfo.studentEmail) {
+                            if (codeInfo.studentEmail !== user.email) {
+                                throw new Error("Mã này không được gán cho tài khoản của bạn.");
+                            }
+                        } else {
+                            studentName = prompt("Đây là một mã dự phòng. Vui lòng nhập họ và tên của bạn để tiếp tục:");
+                            if (!studentName || studentName.trim() === "") throw new Error("Hủy bỏ do chưa nhập tên.");
+                            currentUser.displayName = studentName.trim();
+                        }
+                        
+                        const updatedCodes = [...codes];
+                        updatedCodes[codeIndex].isUsed = true;
+                        if (studentName) {
+                            updatedCodes[codeIndex].studentEmail = user.email;
+                            updatedCodes[codeIndex].studentName = studentName.trim();
+                        }
+                        transaction.update(testRef, { accessCodes: updatedCodes });
+                        
+                        return data;
+                    });
+                    
+                    initializeExam(testData);
+                } catch (error) {
+                    loadingOverlayEl.innerText = `Lỗi: ${error.message}`;
+                    alert(`Lỗi: ${error.message}`);
                 }
             };
 
@@ -400,78 +482,14 @@
                 });
                 resizerEl.addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
             };
-
-            const initializeExam = (examData) => {
-                document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
-                let navHtml = '';
-                examData.questionBlocks.forEach(block => {
-                    const passageNum = block.passage;
-                    const processItem = item => {
-                        navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
-                        questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
-                    };
-                    if (block.items) { block.items.forEach(processItem); } 
-                    else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
-                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
-                        questionDataMap.set(qNum, { answer, type: block.type });
-                    });}
-                });
-                navigationPaneEl.innerHTML = navHtml;
-                passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}">${p.content}</div>`).join('');
-                questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
-                const savedTheme = localStorage.getItem('ielts-theme') || 'light';
-                document.body.classList.toggle('dark', savedTheme === 'dark');
-                document.getElementById('theme-toggle').value = savedTheme;
-                initializeListeners();
-                showPassageAndQuestions("1", true);
-                loadingOverlayEl.style.display = 'none';
-                examContainerEl.style.display = 'flex';
-                let time = examData.timeLimitMinutes * 60;
-                timerInterval = setInterval(() => {
-                    if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
-                    timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
-                }, 1000);
-            };
             
-            const validateAccessCodeAndStartExam = async (user, testId) => {
-                const userCode = prompt("Vui lòng nhập mã làm bài của bạn:");
-                if (!userCode) {
-                    loadingOverlayEl.innerText = "Đã hủy. Vui lòng quay lại trang trước.";
-                    return;
-                }
-                const testRef = db.collection("tests").doc(testId);
-                try {
-                    const testData = await db.runTransaction(async (transaction) => {
-                        const testDoc = await transaction.get(testRef);
-                        if (!testDoc.exists) throw "Bài thi không tồn tại.";
-                        const data = testDoc.data();
-                        if (!data.assignedTo || !data.assignedTo.includes(user.email)) throw "Bạn không được chỉ định làm bài thi này.";
-                        const codes = data.accessCodes || [];
-                        const codeIndex = codes.findIndex(c => c.code === userCode.trim().toUpperCase());
-                        if (codeIndex === -1) throw "Mã làm bài không hợp lệ.";
-                        if (codes[codeIndex].isUsed) throw "Mã này đã được sử dụng.";
-                        const updatedCodes = [...codes];
-                        updatedCodes[codeIndex].isUsed = true;
-                        transaction.update(testRef, { accessCodes: updatedCodes });
-                        return data;
-                    });
-                    console.log("Mã hợp lệ, bắt đầu bài thi.");
-                    initializeExam(testData);
-                } catch (error) {
-                    loadingOverlayEl.innerText = `Lỗi: ${error}`;
-                    alert(`Lỗi: ${error}`);
-                }
-            };
-
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
                     const urlParams = new URLSearchParams(window.location.search);
-                    const testId = urlParams.get('testId');
-                    currentTestId = testId;
-                    if (testId) {
-                        loadingOverlayEl.innerText = "Đang xác thực mã làm bài...";
-                        validateAccessCodeAndStartExam(user, testId);
+                    currentTestId = urlParams.get('testId');
+                    if (currentTestId) {
+                        validateAccessCodeAndStartExam(user, currentTestId);
                     } else {
                         loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
                     }
