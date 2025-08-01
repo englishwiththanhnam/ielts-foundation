@@ -147,51 +147,13 @@
         .correct-answer-text { font-weight: 600; margin-left: 10px; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
         body.dark #loading-overlay { background: rgba(15, 23, 42, 0.8); }
-
-        /* === CSS MỚI CHO CỬA SỔ NHẬP MÃ === */
-        #code-modal .modal-content {
-            max-width: 420px;
-            padding: 32px;
-        }
-        #code-modal h2 {
-            font-size: 1.75rem;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-        #code-modal p {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-        }
-        #code-inputs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-        .code-input {
-            width: 50px;
-            height: 60px;
-            font-size: 2rem;
-            text-align: center;
-            border: 2px solid var(--glass-border-color);
-            border-radius: 12px;
-            background-color: rgba(0,0,0,0.05);
-            color: var(--text-primary);
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            caret-color: var(--primary-accent);
-        }
-        .code-input:focus {
-            border-color: var(--primary-accent);
-            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3);
-        }
-        #code-error {
-            color: #ef4444;
-            font-weight: 600;
-            height: 20px;
-            transition: opacity 0.2s;
-        }
+        #code-modal .modal-content { max-width: 420px; padding: 32px; }
+        #code-modal h2 { font-size: 1.75rem; color: var(--text-primary); margin-bottom: 8px; }
+        #code-modal p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 24px; }
+        #code-inputs { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; }
+        .code-input { width: 50px; height: 60px; font-size: 2rem; text-align: center; border: 2px solid var(--glass-border-color); border-radius: 12px; background-color: rgba(0,0,0,0.05); color: var(--text-primary); outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: var(--primary-accent); }
+        .code-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3); }
+        #code-error { color: #ef4444; font-weight: 600; height: 20px; transition: opacity 0.2s; }
     </style>
 </head>
 <body>
@@ -202,12 +164,12 @@
             <h2>Nhập mã làm bài</h2>
             <p>Vui lòng nhập 6 ký tự trong mã được cung cấp để bắt đầu.</p>
             <div id="code-inputs">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
             </div>
             <p id="code-error"></p>
         </div>
@@ -253,14 +215,14 @@
 
     <script>
         // !!! THẦY HÃY DÁN "CHÌA KHÓA" firebaseConfig CỦA MÌNH VÀO ĐÂY !!!
-const firebaseConfig = {
-  apiKey: "AIzaSyBVuQrkh5XbEPykOl38P8mFmelkFn4dqV8",
-  authDomain: "englishwiththanhnam.firebaseapp.com",
-  projectId: "englishwiththanhnam",
-  storageBucket: "englishwiththanhnam.firebasestorage.app",
-  messagingSenderId: "443758150215",
-  appId: "1:443758150215:web:379ee8bbcdae4d11e7e762"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVuQrkh5XbEPykOl38P8mFmelkFn4dqV8",
+            authDomain: "englishwiththanhnam.firebaseapp.com",
+            projectId: "englishwiththanhnam",
+            storageBucket: "englishwiththanhnam.appspot.com",
+            messagingSenderId: "443758150215",
+            appId: "1:443758150215:web:379ee8bbcdae4d11e7e762"
+        };
         
         // !!! THẦY HÃY DÁN URL CỦA APPS SCRIPT WEB APP VÀO ĐÂY !!!
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXIqam8Nx05Kn2_TZ7xWd5TkrH7PqdV_Qilwb0RheTVLzwTDxDR4BSOR60mD1BzZY0Fg/exec";
@@ -297,6 +259,7 @@ const firebaseConfig = {
             let currentUser = null;
             let currentTestId = null;
             let enteredCode = null;
+            let isAuthCheckComplete = false;
 
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
@@ -308,8 +271,6 @@ const firebaseConfig = {
                 summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`
             };
             RENDERERS.note_completion = RENDERERS.sentence_completion;
-            RENDERERS.table_completion = RENDERERS.sentence_completion; 
-            RENDERERS.multiple_choice_more_answers = RENDERERS.multiple_choice_one_answer;
 
             codeInputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
@@ -329,10 +290,13 @@ const firebaseConfig = {
                 });
                 input.addEventListener('paste', (e) => {
                     e.preventDefault();
-                    const pasteData = e.clipboardData.getData('text').toUpperCase();
-                    if (pasteData.length === 6) {
+                    const pasteData = e.clipboardData.getData('text').toUpperCase().slice(0, 6);
+                    if (pasteData.length > 0) {
                         codeInputs.forEach((box, i) => box.value = pasteData[i] || '');
-                        validateAccessCodeAndStartExam(pasteData);
+                        codeInputs[Math.min(pasteData.length, 5)].focus();
+                        if (pasteData.length === 6) {
+                            validateAccessCodeAndStartExam(pasteData);
+                        }
                     }
                 });
             });
@@ -472,43 +436,6 @@ const firebaseConfig = {
                 }
             };
             
- const showReview = () => {
-                resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
-                document.getElementById('submit-btn').style.display = 'none';
-                document.getElementById('review-btn').style.display = 'block';
-                document.querySelectorAll('input, select').forEach(el => el.disabled = true);
-                document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
-                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
-                passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0;
-
-                questionDataMap.forEach((data, qNum) => {
-                    const userAnswer = userAnswers[qNum];
-                    const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
-                    if (!qContainer) return;
-                    const isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
-                    const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
-                    const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
-                    parent.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    if (!isCorrect) {
-                        const correctAnsEl = document.createElement('span');
-                        correctAnsEl.className = 'correct-answer-text';
-                        let correctAnswerText = data.answer;
-                        if (data.type === 'multiple_choice_one_answer') {
-                            const correctIndex = parseInt(data.answer);
-                            const optionText = qContainer.querySelectorAll('span')[correctIndex + 1]?.textContent;
-                            correctAnswerText = optionText || data.answer;
-                        } else if (data.type === 'matching_features') {
-                            const correctIndex = data.answer.charCodeAt(0) - 65;
-                            correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex + 1]?.text;
-                        }
-                        correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
-                        if (!parent.querySelector('.correct-answer-text')) {
-                            (parent.parentElement || parent).appendChild(correctAnsEl);
-                        }
-                    }
-                });
-            };
-
             const initializeListeners = () => {
                 questionsContentEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
                 questionsContentEl.addEventListener('change', e => {
@@ -561,8 +488,47 @@ const firebaseConfig = {
                 resizerEl.addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
             };
 
+            const showReview = () => {
+                resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
+                document.getElementById('submit-btn').style.display = 'none';
+                document.getElementById('review-btn').style.display = 'block';
+                document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+                document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
+                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
+                passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0;
+                questionDataMap.forEach((data, qNum) => {
+                    const userAnswer = userAnswers[qNum];
+                    const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
+                    if (!qContainer) return;
+                    const isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
+                    const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
+                    const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
+                    parent.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (!isCorrect) {
+                        const correctAnsEl = document.createElement('span');
+                        correctAnsEl.className = 'correct-answer-text';
+                        let correctAnswerText = data.answer;
+                        if (data.type === 'multiple_choice_one_answer') {
+                            const correctIndex = parseInt(data.answer);
+                            const optionText = qContainer.querySelectorAll('span')[correctIndex + 1]?.textContent;
+                            correctAnswerText = optionText || data.answer;
+                        } else if (data.type === 'matching_features') {
+                            const correctIndex = data.answer.charCodeAt(0) - 65;
+                            correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex + 1]?.text;
+                        }
+                        correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
+                        if (!parent.querySelector('.correct-answer-text')) {
+                            (parent.parentElement || parent).appendChild(correctAnsEl);
+                        }
+                    }
+                });
+            };
+
             auth.onAuthStateChanged(user => {
+                if (isAuthCheckComplete) return;
+
                 if (user) {
+                    isAuthCheckComplete = true;
                     currentUser = user;
                     const urlParams = new URLSearchParams(window.location.search);
                     currentTestId = urlParams.get('testId');
@@ -575,6 +541,7 @@ const firebaseConfig = {
                         loadingOverlayEl.style.display = 'flex';
                     }
                 } else {
+                    isAuthCheckComplete = true;
                     window.location.href = 'index.html'; 
                 }
             });
