@@ -139,248 +139,330 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-            authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-            projectId: "ielts-foundation-6ea9d",
-            storageBucket: "ielts-foundation-6ea9d.appspot.com",
-            messagingSenderId: "296690693780",
-            appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
-            measurementId: "G-CZD89F0FC3"
+    // [IMPROVEMENT] - Đưa các hằng số quan trọng lên đầu để dễ quản lý
+    const firebaseConfig = {
+        apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
+        authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
+        projectId: "ielts-foundation-6ea9d",
+        storageBucket: "ielts-foundation-6ea9d.appspot.com",
+        messagingSenderId: "296690693780",
+        appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
+        measurementId: "G-CZD89F0FC3"
+    };
+    
+    // URL của Google Apps Script đã triển khai
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXIqam8Nx05Kn2_TZ7xWd5TkrH7PqdV_Qilwb0RheTVLzwTDxDR4BSOR60mD1BzZY0Fg/exec";
+
+    // Khởi tạo Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // [IMPROVEMENT] - Gom nhóm các element của UI để dễ đọc
+        const ui = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            examContainer: document.querySelector('.exam-container'),
+            codeModal: document.getElementById('code-modal'),
+            codeInputs: document.querySelectorAll('.code-input'),
+            codeError: document.getElementById('code-error'),
+            nameModal: document.getElementById('name-modal'),
+            nameForm: document.getElementById('name-modal-form'),
+            nameInput: document.getElementById('name-input'),
+            nameError: document.getElementById('name-error'),
+            resultModal: document.getElementById('result-modal'),
+            confirmSubmitModal: document.getElementById('confirm-submit-modal')
         };
         
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXIqam8Nx05Kn2_TZ7xWd5TkrH7PqdV_Qilwb0RheTVLzwTDxDR4BSOR60mD1BzZY0Fg/exec";
+        // [IMPROVEMENT] - Gom nhóm các biến trạng thái
+        const state = {
+            currentUser: null,
+            currentTestId: null,
+            enteredCode: null,
+            isAuthCheckComplete: false,
+            questionDataMap: new Map(),
+            userAnswers: {}
+        };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // BỘ RENDER CÂU HỎI (Giữ nguyên, phần này đã rất tốt)
+        const RENDERERS = {
+            multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
+            multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
+            true_false_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['TRUE', 'FALSE', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
+            yes_no_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['YES', 'NO', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
+            note_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace('______', `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
+            sentence_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace('______', `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
+            custom_html_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.content}`,
+            summary_completion_from_text: block => `<p class="question-instruction">${block.instruction}</p><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span data-q-container="${qNum}"><b>${qNum}.</b> <input type="text" class="completion-input" data-q-num="${qNum}"></span>`)}</p>`,
+            table_completion: block => `<p class="question-instruction">${block.instruction}</p><table class="completion-table"><thead><tr>${block.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => typeof cell === 'object' ? `<td data-q-container="${cell.qNum}"><b>${cell.qNum}.</b> <input type="text" class="completion-input" data-q-num="${cell.qNum}"></td>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
+            matching_features: block => `<p class="question-instruction">${block.instruction}</p><div style="margin-bottom:1rem;line-height:1.5;">${block.features.map((f, i) => `<b>${String.fromCharCode(65+i)}</b>. ${f}`).join('<br>')}</div>${block.items.map(item => `<div class="matching-item" data-q-container="${item.qNum}"><span><b>${item.qNum}.</b> ${item.text}</span><select class="themed-select" data-q-num="${item.qNum}"><option value="">Select...</option>${block.features.map((f, i) => `<option value="${String.fromCharCode(65 + i)}">${f}</option>`).join('')}</select></div>`).join('')}`,
+            summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
+            matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
+        };
+        
+        // [NEW] - Hàm trợ giúp để quản lý màn hình loading
+        const showLoading = (message) => {
+            ui.loadingOverlay.innerText = message;
+            ui.loadingOverlay.style.display = 'flex';
+        };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const loadingOverlayEl = document.getElementById('loading-overlay');
-            const examContainerEl = document.querySelector('.exam-container');
-            const codeModalEl = document.getElementById('code-modal');
-            const codeInputs = document.querySelectorAll('.code-input');
-            const codeErrorEl = document.getElementById('code-error');
-            const nameModalEl = document.getElementById('name-modal');
-            const nameInputEl = document.getElementById('name-input');
-            const nameModalForm = document.getElementById('name-modal-form');
-            
-            let currentUser = null;
-            let currentTestId = null;
-            let enteredCode = null;
-            let isAuthCheckComplete = false;
+        const hideLoading = () => {
+            ui.loadingOverlay.style.display = 'none';
+        };
+        
+        // [NEW] - Hàm trợ giúp để báo lỗi cho người dùng
+        const showError = (modal, element, message) => {
+            hideLoading();
+            modal.classList.add('show');
+            element.innerText = message;
+        };
 
-            const RENDERERS = {
-                multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
-                multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
-                true_false_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['TRUE', 'FALSE', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
-                yes_no_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['YES', 'NO', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
-                note_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace('______', `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
-                sentence_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace('______', `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
-                custom_html_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.content}`,
-                summary_completion_from_text: block => `<p class="question-instruction">${block.instruction}</p><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span data-q-container="${qNum}"><b>${qNum}.</b> <input type="text" class="completion-input" data-q-num="${qNum}"></span>`)}</p>`,
-                table_completion: block => `<p class="question-instruction">${block.instruction}</p><table class="completion-table"><thead><tr>${block.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => typeof cell === 'object' ? `<td data-q-container="${cell.qNum}"><b>${cell.qNum}.</b> <input type="text" class="completion-input" data-q-num="${cell.qNum}"></td>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
-                matching_features: block => `<p class="question-instruction">${block.instruction}</p><div style="margin-bottom:1rem;line-height:1.5;">${block.features.map((f, i) => `<b>${String.fromCharCode(65+i)}</b>. ${f}`).join('<br>')}</div>${block.items.map(item => `<div class="matching-item" data-q-container="${item.qNum}"><span><b>${item.qNum}.</b> ${item.text}</span><select class="themed-select" data-q-num="${item.qNum}"><option value="">Select...</option>${block.features.map((f, i) => `<option value="${String.fromCharCode(65 + i)}">${f}</option>`).join('')}</select></div>`).join('')}`,
-                summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
-                matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
-            };
+        // [FIX & IMPROVEMENT] - Hàm nộp bài được viết lại cho rõ ràng và ổn định
+        const submitTest = async () => {
+            clearInterval(window.timerInterval); // Dọn dẹp timer
+            showLoading("Đang nộp bài của bạn...");
 
-            const startExam = (examData) => {
-                let userAnswers = {};
-                let timerInterval;
-                let isResizing = false;
-                let dragged = null;
-                const questionDataMap = new Map();
+            let score = 0;
+            state.questionDataMap.forEach((data, qNum) => {
+                const userAnswer = state.userAnswers[String(qNum)];
+                if (userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase()) {
+                    score++;
+                }
+            });
 
-                const submitTest = async () => {
-                    clearInterval(timerInterval);
-                    let score = 0;
-                    questionDataMap.forEach((data, qNum) => {
-                        const userAnswer = userAnswers[String(qNum)];
-                        if (userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase()) {
-                            score++;
-                        }
-                    });
+            // Hiển thị kết quả cho học sinh
+            ui.resultModal.innerHTML = `<div class="modal-content glass-effect"><h2>Hoàn thành!</h2><p>Điểm của bạn:</p><p id="modal-score" style="font-size: 3rem; font-weight: 700;">${score} / ${state.questionDataMap.size}</p><button id="close-modal-btn" class="btn btn-main-action">Đóng</button></div>`;
+            hideLoading();
+            ui.resultModal.classList.add('show');
+            document.getElementById('close-modal-btn').addEventListener('click', () => {
+                 window.location.href = 'index.html'; // Nộp xong thì về trang chủ
+            });
 
-                    document.getElementById('result-modal').innerHTML = `<div class="modal-content glass-effect"><h2>Hoàn thành!</h2><p>Điểm của bạn:</p><p id="modal-score" style="font-size: 3rem; font-weight: 700;">${score} / ${questionDataMap.size}</p><button id="close-modal-btn" class="btn btn-main-action">Xem lại</button></div>`;
-                    document.getElementById('result-modal').classList.add('show');
-                    document.getElementById('close-modal-btn').addEventListener('click', () => showReview(userAnswers, questionDataMap));
+            // Gửi kết quả lên hệ thống (Firestore và Google Sheets)
+            if (state.currentUser && state.currentTestId && state.enteredCode) {
+                const resultData = {
+                    studentUid: state.currentUser.uid,
+                    studentEmail: state.currentUser.email,
+                    studentName: state.currentUser.displayName || "Không rõ",
+                    testId: state.currentTestId,
+                    codeUsed: state.enteredCode,
+                    answers: state.userAnswers,
+                    score: score,
+                    totalQuestions: state.questionDataMap.size,
+                    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
 
-                    if (currentUser && currentTestId && enteredCode) {
-                        db.collection("results").add({ studentUid: currentUser.uid, studentEmail: currentUser.email, studentName: currentUser.displayName || "", testId: currentTestId, codeUsed: enteredCode, answers: userAnswers, score: score, totalQuestions: questionDataMap.size, submittedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                        
-                        const formData = new FormData();
-                        formData.append('action', 'UPDATE_SCORE');
-                        formData.append('code', enteredCode);
-                        formData.append('score', score);
-                        formData.append('totalQuestions', questionDataMap.size);
-                        formData.append('studentEmail', currentUser.email);
-                        formData.append('studentName', currentUser.displayName || "");
-                        fetch(WEB_APP_URL, { method: 'POST', body: formData, mode: 'no-cors' }).catch(err => console.error("Lỗi gửi điểm:", err));
+                const sheetFormData = new FormData();
+                sheetFormData.append('action', 'UPDATE_SCORE');
+                sheetFormData.append('code', state.enteredCode);
+                sheetFormData.append('score', score);
+                sheetFormData.append('totalQuestions', state.questionDataMap.size);
+
+                // [IMPROVEMENT] - Thực hiện song song việc lưu vào Firestore và Sheets
+                const promises = [
+                    db.collection("results").add(resultData),
+                    // [FIX] - Bỏ 'no-cors' và thêm xử lý lỗi
+                    fetch(WEB_APP_URL, { method: 'POST', body: sheetFormData })
+                ];
+
+                const results = await Promise.allSettled(promises);
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        console.error(`Lỗi khi thực hiện tác vụ ${index === 0 ? 'lưu vào Firestore' : 'cập nhật Google Sheet'}:`, result.reason);
                     }
-                };
-
-                const showReview = (userAnswers, questionDataMap) => {
-                    document.getElementById('result-modal').classList.remove('show');
-                    document.body.classList.add('review-mode');
-                    document.getElementById('submit-btn').style.display = 'none';
-                    document.getElementById('review-btn').style.display = 'block';
-                };
-
-                const updateAnswer = (qNum, value) => {
-                    const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
-                    if (value && String(value).trim() !== "") { userAnswers[qNum] = value; navItem?.classList.add('answered'); } 
-                    else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
-                };
-
-                const showPassageAndQuestions = (passageNum) => {
-                    document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
-                    document.getElementById(`passage-container-${passageNum}`).style.display = 'block';
-                    document.querySelectorAll(`.question-block[data-passage="${passageNum}"]`).forEach(q => q.style.display = 'block');
-                };
-                
-                examContainerEl.innerHTML = `<div class="unified-panel"><header class="exam-header glass-effect"><div class="header-left"><span>IELTS</span></div><div class="header-center" id="exam-title"></div><div class="header-right"><div id="timer">60:00</div></div></header><main class="main-content"><div class="panel passage-panel" id="passage-panel"></div><div id="resizer"></div><div class="panel questions-panel" id="questions-panel"></div></main><footer class="exam-footer glass-effect"><div class="navigation-controls"><div class="nav-left-group"><select id="passage-select" class="themed-select"></select><div id="navigation-pane" class="navigation-pane"></div></div><div class="footer-buttons"><button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div></div></footer></div>`;
-                
-                document.getElementById('exam-title').innerText = examData.title;
-                let navHtml = '';
-                examData.questionBlocks.forEach(block => {
-                    const items = block.items || Object.keys(block.answers || {});
-                    items.forEach(item => {
-                        const qNum = item.qNum || item;
-                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${block.passage}">${qNum}</div>`;
-                        questionDataMap.set(String(qNum), { answer: item.answer || block.answers[qNum], type: block.type });
-                    });
                 });
-                
-                document.getElementById('navigation-pane').innerHTML = navHtml;
-                document.getElementById('passage-panel').innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
-                document.getElementById('questions-panel').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type] ? RENDERERS[block.type](block) : ''}</div>`).join('');
-                document.getElementById('passage-select').innerHTML = examData.passages.map(p => `<option value="${p.id}">Passage ${p.id}</option>`).join('');
+            }
+        };
 
-                showPassageAndQuestions(1);
-                
-                document.getElementById('submit-btn').addEventListener('click', () => {
-                    document.getElementById('confirm-submit-modal').classList.add('show');
-                    document.getElementById('confirm-submit-yes').onclick = () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); };
-                    document.getElementById('confirm-submit-no').onclick = () => document.getElementById('confirm-submit-modal').classList.remove('show');
+        // [IMPROVEMENT] - Hàm bắt đầu bài thi được tối ưu
+        const startExam = (examData) => {
+            // [FIX] - Chốt chặn quan trọng: Kiểm tra dữ liệu đề thi có hợp lệ không
+            if (!examData || !Array.isArray(examData.passages) || !Array.isArray(examData.questionBlocks)) {
+                showError(ui.codeModal, ui.codeError, 'Lỗi: Cấu trúc dữ liệu đề thi không hợp lệ. Vui lòng liên hệ giáo viên.');
+                return;
+            }
+
+            // Xây dựng giao diện chính
+            let navHtml = '';
+            examData.questionBlocks.forEach(block => {
+                const qNumbers = block.items?.map(item => item.qNum) || Object.keys(block.answers || {});
+                qNumbers.forEach(qNum => {
+                    navHtml += `<div class="nav-item" data-q-num="${qNum}">${qNum}</div>`;
+                    const answer = block.items?.find(i => i.qNum == qNum)?.answer || block.answers?.[qNum];
+                    state.questionDataMap.set(String(qNum), { answer: answer, type: block.type });
                 });
+            });
 
-                document.getElementById('questions-panel').addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
-                document.getElementById('questions-panel').addEventListener('change', e => {
-                    const qNum = e.target.name?.replace('q', '') || e.target.dataset.qNum;
-                    if(qNum) updateAnswer(qNum, e.target.value);
-                });
+            ui.examContainer.innerHTML = `<div class="unified-panel"><header class="exam-header glass-effect"><div class="header-left"><span>IELTS</span></div><div class="header-center" id="exam-title"></div><div class="header-right"><div id="timer">60:00</div></div></header><main class="main-content"><div class="panel passage-panel" id="passage-panel"></div><div id="resizer"></div><div class="panel questions-panel" id="questions-panel"></div></main><footer class="exam-footer glass-effect"><div class="navigation-controls"><div id="navigation-pane" class="navigation-pane"></div><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div></footer>`;
+            
+            document.getElementById('exam-title').innerText = examData.title;
+            document.getElementById('navigation-pane').innerHTML = navHtml;
+            document.getElementById('passage-panel').innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}">${p.content}</div>`).join('');
+            document.getElementById('questions-panel').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type] ? RENDERERS[block.type](block) : ''}</div>`).join('');
+            
+            // Gắn listener cho các hành động
+            document.getElementById('submit-btn').addEventListener('click', () => {
+                const answeredCount = Object.keys(state.userAnswers).length;
+                if (confirm(`Bạn đã trả lời ${answeredCount}/${state.questionDataMap.size} câu. Bạn có chắc chắn muốn nộp bài không?`)) {
+                    submitTest();
+                }
+            });
 
-                let time = examData.timeLimitMinutes * 60;
-                const timerEl = document.getElementById('timer');
-                timerInterval = setInterval(() => {
-                    if (--time < 0) { clearInterval(timerInterval); submitTest(); return; }
-                    if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
-                }, 1000);
-            };
-
-            const promptForName = () => new Promise((resolve) => {
-                nameModalEl.classList.add('show');
-                nameInputEl.focus();
-                nameModalForm.onsubmit = (e) => {
-                    e.preventDefault();
-                    const name = nameInputEl.value.trim();
-                    if (name) resolve(name);
-                };
+            document.getElementById('questions-panel').addEventListener('input', e => {
+                const qNum = e.target.dataset.qNum;
+                if (qNum) state.userAnswers[qNum] = e.target.value;
+            });
+            document.getElementById('questions-panel').addEventListener('change', e => {
+                 const qNum = e.target.name?.replace('q', '') || e.target.dataset.qNum;
+                 if(qNum) state.userAnswers[qNum] = e.target.value;
             });
             
-            const validateAccessCodeAndStartExam = async (userCode) => {
-                if (!userCode || userCode.length !== 6) return;
-                
-                codeModalEl.classList.remove('show');
-                loadingOverlayEl.style.display = 'flex';
-                loadingOverlayEl.innerText = "Đang xác thực mã...";
-                enteredCode = userCode.trim().toUpperCase();
-                const testRef = db.collection("tests").doc(currentTestId);
+            // Bắt đầu timer
+            let time = (examData.timeLimitMinutes || 60) * 60;
+            const timerEl = document.getElementById('timer');
+            window.timerInterval = setInterval(() => {
+                if (--time < 0) {
+                    alert("Hết giờ làm bài! Hệ thống sẽ tự động nộp bài của bạn.");
+                    submitTest();
+                    return;
+                }
+                if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+            }, 1000);
 
-                try {
-                    const testData = await db.runTransaction(async (transaction) => {
-                        const testDoc = await transaction.get(testRef);
-                        if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
-                        
-                        const data = testDoc.data();
-                        const codes = data.accessCodes || [];
-                        const codeIndex = codes.findIndex(c => c.code === enteredCode);
+            // Hiển thị bài thi
+            hideLoading();
+            ui.examContainer.style.display = 'flex';
+        };
 
-                        if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
-                        if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
-
-                        const codeInfo = codes[codeIndex];
-                        let studentName = "";
-
-                        if (codeInfo.studentEmail && codeInfo.studentEmail !== currentUser.email) {
-                            throw new Error("Mã này không được gán cho tài khoản của bạn.");
-                        }
-                        
-                        if (!codeInfo.studentEmail) {
-                            studentName = await promptForName();
-                            currentUser.displayName = studentName;
-                        }
-                        
-                        const updatedCodes = [...codes];
-                        updatedCodes[codeIndex].isUsed = true;
-                        if (studentName) {
-                            updatedCodes[codeIndex].studentEmail = currentUser.email;
-                            updatedCodes[codeIndex].studentName = studentName;
-                        }
-                        transaction.update(testRef, { accessCodes: updatedCodes });
-                        
-                        return data;
-                    });
-                    
-                    nameModalEl.classList.remove('show');
-// Lỗi giao diện chồng chéo xảy ra ở đây. Cần đảm bảo modal tên ẩn đi TRƯỚC KHI loading hiện ra.
-// The UI overlap happens here. Need to ensure the name modal is hidden BEFORE the loading overlay shows up.
-
-                    loadingOverlayEl.innerText = "Đang tải đề thi...";
-                    startExam(testData);
-
-                } catch (error) {
-                    loadingOverlayEl.style.display = 'none';
-                    codeModalEl.classList.add('show');
-                    codeInputs.forEach(input => input.value = '');
-                    codeInputs[0].focus();
-                    codeErrorEl.innerText = error.message;
+        // [IMPROVEMENT] - Hàm nhập tên được tối ưu
+        const promptForName = () => new Promise((resolve) => {
+            ui.nameModal.classList.add('show');
+            ui.nameInput.focus();
+            
+            ui.nameForm.onsubmit = (e) => {
+                e.preventDefault();
+                const name = ui.nameInput.value.trim();
+                if (name) {
+                    ui.nameModal.classList.remove('show'); // [FIX] - Ẩn modal ngay lập tức
+                    resolve(name);
+                } else {
+                    ui.nameError.innerText = "Vui lòng không để trống họ tên.";
                 }
             };
+        });
+        
+        // [MAJOR FIX & REFACTOR] - Hàm xác thực mã được viết lại hoàn toàn
+        const validateAccessCodeAndStartExam = async (userCode) => {
+            if (!userCode || userCode.length !== 6) return;
             
-            codeInputs.forEach((input, index) => {
-                input.addEventListener('input', () => {
-                    input.value = input.value.toUpperCase();
-                    if (input.value && index < codeInputs.length - 1) { codeInputs[index + 1].focus(); }
-                    const code = Array.from(codeInputs).map(i => i.value).join('');
-                    if (code.length === 6) { validateAccessCodeAndStartExam(code); }
-                });
-            });
+            showLoading("Đang xác thực mã...");
+            ui.codeModal.classList.remove('show');
+            state.enteredCode = userCode.trim().toUpperCase();
+            const testRef = db.collection("tests").doc(state.currentTestId);
 
-            auth.onAuthStateChanged(user => {
-                if (isAuthCheckComplete) return;
+            try {
+                const testData = await db.runTransaction(async (transaction) => {
+                    const testDoc = await transaction.get(testRef);
+                    if (!testDoc.exists) throw new Error("Lỗi: Bài thi không tồn tại.");
+                    
+                    const data = testDoc.data();
+                    const codes = data.accessCodes || [];
+                    const codeIndex = codes.findIndex(c => c.code === state.enteredCode);
 
-                if (user) {
-                    isAuthCheckComplete = true;
-                    currentUser = user;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    currentTestId = urlParams.get('testId');
-                    if (currentTestId) {
-                        loadingOverlayEl.style.display = 'none';
-                        codeModalEl.classList.add('show');
-                        codeInputs[0].focus();
-                    } else {
-                        loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
+                    if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
+                    const codeInfo = codes[codeIndex];
+                    if (codeInfo.isUsed) throw new Error("Mã này đã được sử dụng.");
+                    if (codeInfo.studentEmail && codeInfo.studentEmail !== state.currentUser.email) {
+                        throw new Error("Mã này không được gán cho tài khoản của bạn.");
                     }
-                } else {
-                    isAuthCheckComplete = true;
-                    window.location.href = 'index.html'; 
+
+                    // Nếu là mã dự phòng, yêu cầu nhập tên
+                    if (!codeInfo.studentEmail) {
+                        // [FIX] - Chờ lấy tên xong mới đi tiếp, khắc phục lỗi chồng chéo UI
+                        const studentName = await promptForName();
+                        state.currentUser.displayName = studentName;
+                        codes[codeIndex].studentName = studentName;
+                        codes[codeIndex].studentEmail = state.currentUser.email;
+                    } else {
+                        state.currentUser.displayName = codeInfo.studentName || "";
+                    }
+                    
+                    // Cập nhật trạng thái mã
+                    codes[codeIndex].isUsed = true;
+                    transaction.update(testRef, { accessCodes: codes });
+                    
+                    return data;
+                });
+                
+                // [NEW] - Cập nhật thông tin người làm bài lên Google Sheet ngay lập tức
+                showLoading("Đang chuẩn bị bài thi...");
+                const claimFormData = new FormData();
+                claimFormData.append('action', 'CLAIM_CODE');
+                claimFormData.append('code', state.enteredCode);
+                claimFormData.append('studentEmail', state.currentUser.email);
+                claimFormData.append('studentName', state.currentUser.displayName);
+                
+                // [FIX] - Gửi request lên sheet
+                fetch(WEB_APP_URL, { method: 'POST', body: claimFormData })
+                    .catch(err => console.error("Lỗi cập nhật CLAIM_CODE lên Sheet:", err));
+
+                // Bắt đầu bài thi với dữ liệu đã lấy được
+                startExam(testData);
+
+            } catch (error) {
+                console.error("Lỗi khi xác thực mã:", error);
+                // [IMPROVEMENT] - Hiển thị lỗi thân thiện cho người dùng và reset modal
+                ui.codeInputs.forEach(input => input.value = '');
+                ui.codeInputs[0].focus();
+                showError(ui.codeModal, ui.codeError, error.message);
+            }
+        };
+        
+        // Listener cho các ô nhập mã
+        ui.codeInputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.toUpperCase();
+                const code = Array.from(ui.codeInputs).map(i => i.value).join('');
+                if (input.value && index < ui.codeInputs.length - 1) {
+                    ui.codeInputs[index + 1].focus();
+                }
+                if (code.length === 6) {
+                    validateAccessCodeAndStartExam(code);
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if(e.key === "Backspace" && !input.value && index > 0) {
+                    ui.codeInputs[index - 1].focus();
                 }
             });
         });
-    </script>
+
+        // Luồng chính khi trang được tải
+        auth.onAuthStateChanged(user => {
+            if (state.isAuthCheckComplete) return;
+            state.isAuthCheckComplete = true;
+
+            if (user) {
+                state.currentUser = user;
+                const urlParams = new URLSearchParams(window.location.search);
+                state.currentTestId = urlParams.get('testId');
+                
+                if (state.currentTestId) {
+                    hideLoading();
+                    ui.codeModal.classList.add('show');
+                    ui.codeInputs[0].focus();
+                } else {
+                    showLoading("Lỗi: Không có bài thi nào được chọn. Đang chuyển về trang chủ...");
+                    setTimeout(() => window.location.href = 'index.html', 3000);
+                }
+            } else {
+                showLoading("Bạn chưa đăng nhập. Đang chuyển về trang đăng nhập...");
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            }
+        });
+    });
+</script>
 </body>
 </html>
