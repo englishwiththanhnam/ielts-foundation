@@ -16,7 +16,7 @@
         .modal.is-open { display: flex; }
         .tab-button.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
         .draggable-item { cursor: grab; }
-        .drop-zone { min-height: 100px; background-color: #f9fafb; border: 2px dashed #d1d5db; }
+        .drop-zone { min-height: 100px; background-color: #f9fafb; border: 2px dashed #d1d5db; transition: all 0.2s ease; }
         .drop-zone.drag-over { background-color: #eef2ff; border-color: #4f46e5; }
     </style>
 </head>
@@ -95,6 +95,7 @@ const firebaseConfig = {
                         adminName.textContent = user.displayName || user.email;
                         renderDashboard();
                     } else {
+                        alert('Tài khoản không có quyền Admin.');
                         auth.signOut();
                         window.location.href = 'login.html';
                     }
@@ -123,21 +124,47 @@ const firebaseConfig = {
             });
         });
 
-        async function renderDashboard() { /* ... */ }
+        async function renderDashboard() {
+            pageTitle.textContent = 'Dashboard';
+            mainContent.innerHTML = `<p>Đang tải thống kê...</p>`;
+            try {
+                const [usersSnap, classesSnap, assignmentsSnap] = await Promise.all([
+                    db.collection('users').get(),
+                    db.collection('classes').get(),
+                    db.collection('assignments').get()
+                ]);
+                const studentCount = usersSnap.docs.filter(doc => doc.data().role === 'student').length;
+                mainContent.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số học sinh</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${studentCount}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số lớp học</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${classesSnap.size}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số bài tập</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${assignmentsSnap.size}</p>
+                        </div>
+                    </div>`;
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải thống kê: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
 
         async function renderClassManagement() {
             pageTitle.textContent = 'Quản Lý Lớp Học';
             mainContent.innerHTML = `<p>Đang tải...</p>`;
-            
             try {
                 const [classesSnap, curriculumsSnap] = await Promise.all([
                     db.collection('classes').get(),
                     db.collection('curriculums').get()
                 ]);
-
                 const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
                 let classHtml = `
                     <div class="mb-6 bg-white p-4 rounded-lg shadow">
                         <h3 class="font-bold mb-2">Tạo Lớp Mới</h3>
@@ -160,7 +187,6 @@ const firebaseConfig = {
                                 </tr>
                             </thead>
                             <tbody class="text-gray-700">`;
-                
                 classesSnap.forEach(doc => {
                     const classData = doc.data();
                     const curriculum = curriculums.find(c => c.id === classData.curriculumId);
@@ -171,10 +197,8 @@ const firebaseConfig = {
                             <td class="text-left py-3 px-4">
                                 <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
                             </td>
-                        </tr>
-                    `;
+                        </tr>`;
                 });
-
                 classHtml += `</tbody></table></div>`;
                 mainContent.innerHTML = classHtml;
             } catch (error) {
@@ -183,7 +207,40 @@ const firebaseConfig = {
             }
         }
 
-        async function renderStudentManagement() { /* ... */ }
+        async function renderStudentManagement() {
+            pageTitle.textContent = 'Quản Lý Học Sinh';
+            mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
+            try {
+                const snapshot = await db.collection('users').get();
+                let studentHtml = `
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-800 text-white">
+                                <tr>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Họ và Tên</th>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Email</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">UID</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">`;
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    if (user.role === 'student') {
+                        studentHtml += `
+                            <tr>
+                                <td class="w-1/3 text-left py-3 px-4">${user.displayName}</td>
+                                <td class="w-1/3 text-left py-3 px-4">${user.email}</td>
+                                <td class="text-left py-3 px-4 text-xs text-gray-500">${doc.id}</td>
+                            </tr>`;
+                    }
+                });
+                studentHtml += `</tbody></table></div><p class="mt-4 text-sm text-gray-600">Lưu ý: Để tạo hoặc xóa tài khoản học sinh, vui lòng truy cập Firebase Authentication Console.</p>`;
+                mainContent.innerHTML = studentHtml;
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách học sinh: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
 
         async function renderContentManagement() {
             pageTitle.textContent = 'Quản Lý Nội Dung';
@@ -194,113 +251,126 @@ const firebaseConfig = {
                         <button id="tab-supplementary" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Học Phần Bổ Sung</button>
                     </nav>
                 </div>
-                <div id="content-display"></div>
-            `;
+                <div id="content-display"></div>`;
             await renderCurriculumTab();
         }
 
         async function renderCurriculumTab() {
             document.getElementById('content-display').innerHTML = `<p>Đang tải giáo trình...</p>`;
-            const curriculumsSnap = await db.collection('curriculums').get();
-            let html = `
-                <div class="mb-6 bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold mb-2">Tạo Giáo Trình Mới</h3>
-                    <div class="flex gap-4">
-                        <input id="new-curriculum-name" type="text" placeholder="Tên giáo trình..." class="flex-grow p-2 border rounded-md">
-                        <button id="add-curriculum-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo</button>
-                    </div>
-                </div>
-                <div class="space-y-4">`;
-
-            curriculumsSnap.forEach(doc => {
-                const curriculum = doc.data();
-                html += `
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold">${curriculum.name}</h3>
-                            <button class="manage-curriculum-btn text-indigo-600 hover:underline" data-id="${doc.id}">Quản lý học phần</button>
+            try {
+                const curriculumsSnap = await db.collection('curriculums').get();
+                let html = `
+                    <div class="mb-6 bg-white p-4 rounded-lg shadow">
+                        <h3 class="font-bold mb-2">Tạo Giáo Trình Mới</h3>
+                        <div class="flex gap-4">
+                            <input id="new-curriculum-name" type="text" placeholder="Tên giáo trình..." class="flex-grow p-2 border rounded-md">
+                            <button id="add-curriculum-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo</button>
                         </div>
                     </div>
-                `;
-            });
-            html += `</div>`;
-            document.getElementById('content-display').innerHTML = html;
+                    <div class="space-y-4">`;
+                curriculumsSnap.forEach(doc => {
+                    const curriculum = doc.data();
+                    html += `
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-bold">${curriculum.name}</h3>
+                                <button class="manage-curriculum-btn text-indigo-600 hover:underline" data-id="${doc.id}">Quản lý học phần</button>
+                            </div>
+                        </div>`;
+                });
+                html += `</div>`;
+                document.getElementById('content-display').innerHTML = html;
+            } catch (error) {
+                document.getElementById('content-display').innerHTML = `<p class="text-red-500">Lỗi khi tải giáo trình: ${error.message}</p>`;
+            }
         }
         
         async function renderCurriculumDetailView(curriculumId) {
             pageTitle.textContent = 'Chỉnh sửa Giáo trình';
             mainContent.innerHTML = `<p>Đang tải chi tiết...</p>`;
-            
-            const [curriculumDoc, vocabSnap, testsSnap] = await Promise.all([
-                db.collection('curriculums').doc(curriculumId).get(),
-                db.collection('vocab_sets').where('isSupplementary', '==', false).get(),
-                db.collection('tests').where('isSupplementary', '==', false).get()
-            ]);
+            try {
+                const [curriculumDoc, coreModulesSnap] = await Promise.all([
+                    db.collection('curriculums').doc(curriculumId).get(),
+                    db.collection('vocab_sets').where('isSupplementary', '==', false).get()
+                ]);
 
-            const curriculum = curriculumDoc.data();
-            const currentModuleIds = new Set((curriculum.modules || []).map(m => m.contentId));
+                const curriculum = curriculumDoc.data();
+                const curriculumModules = await db.collection('curriculums').doc(curriculumId).collection('modules').get();
+                const currentModuleIds = new Set(curriculumModules.docs.map(doc => doc.id));
 
-            const availableModules = [];
-            vocabSnap.forEach(doc => availableModules.push({ type: 'vocab', id: doc.id, ...doc.data() }));
-            // testsSnap.forEach(doc => availableModules.push({ type: 'test', id: doc.id, ...doc.data() }));
+                const availableModules = coreModulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            let curriculumModulesHtml = (curriculum.modules || []).map(module => `
-                <div class="draggable-item bg-indigo-100 p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${module.contentId}" data-title="${module.title}">
-                    <i class="fas fa-grip-vertical mr-2 text-gray-400"></i> ${module.title}
-                </div>
-            `).join('');
+                let curriculumModulesHtml = curriculumModules.docs.map(doc => {
+                    const module = doc.data();
+                    return `<div class="draggable-item bg-indigo-100 p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${doc.id}" data-title="${module.title}">
+                                <i class="fas fa-grip-vertical mr-2 text-gray-400"></i> ${module.title}
+                            </div>`;
+                }).join('');
 
-            let availableModulesHtml = availableModules.filter(m => !currentModuleIds.has(m.id)).map(module => `
-                 <div class="draggable-item bg-white p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${module.id}" data-title="${module.title}">
-                    <i class="fas fa-plus mr-2 text-green-500"></i> ${module.title}
-                </div>
-            `).join('');
-            
-            mainContent.innerHTML = `
-                <button id="back-to-content-btn" class="mb-4 bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">&larr; Quay lại</button>
-                <h2 class="text-2xl font-bold mb-4">${curriculum.name}</h2>
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="font-semibold mb-2">Học phần trong Giáo trình</h3>
-                        <div id="curriculum-modules" class="drop-zone p-4 rounded-lg space-y-2" data-id="${curriculumId}">
-                            ${curriculumModulesHtml}
+                let availableModulesHtml = availableModules.filter(m => !currentModuleIds.has(m.id)).map(module => `
+                     <div class="draggable-item bg-white p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${module.id}" data-title="${module.title}">
+                        <i class="fas fa-plus mr-2 text-green-500"></i> ${module.title}
+                    </div>`).join('');
+                
+                mainContent.innerHTML = `
+                    <button id="back-to-content-btn" class="mb-4 bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">&larr; Quay lại</button>
+                    <h2 class="text-2xl font-bold mb-4">${curriculum.name}</h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-semibold mb-2">Học phần trong Giáo trình</h3>
+                            <div id="curriculum-modules" class="drop-zone p-4 rounded-lg space-y-2" data-id="${curriculumId}">
+                                ${curriculumModulesHtml}
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold mb-2">Học phần gốc có sẵn</h3>
-                        <div id="available-modules" class="drop-zone p-4 rounded-lg space-y-2">
-                            ${availableModulesHtml}
+                        <div>
+                            <h3 class="font-semibold mb-2">Học phần gốc có sẵn</h3>
+                            <div id="available-modules" class="drop-zone p-4 rounded-lg space-y-2">
+                                ${availableModulesHtml}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `;
+                    </div>`;
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải chi tiết giáo trình: ${error.message}</p>`;
+            }
         }
 
         async function renderSupplementaryTab() {
             document.getElementById('content-display').innerHTML = `<p>Đang tải học phần bổ sung...</p>`;
-            const snapshot = await db.collection('supplementary_modules').get();
-            let html = `<div class="bg-white shadow-md rounded-lg overflow-hidden">
-                        <table class="min-w-full bg-white">
-                            <thead class="bg-gray-800 text-white">
-                                <tr>
-                                    <th class="w-4/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tiêu đề</th>
-                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Loại</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-700">`;
-            snapshot.forEach(doc => {
-                const module = doc.data();
-                html += `<tr>
-                            <td class="w-4/5 text-left py-3 px-4">${module.title}</td>
-                            <td class="text-left py-3 px-4">${module.type}</td>
-                         </tr>`;
-            });
-            html += `</tbody></table></div>`;
-            document.getElementById('content-display').innerHTML = html;
+            try {
+                const snapshot = await db.collection('supplementary_modules').get();
+                let html = `<div class="bg-white shadow-md rounded-lg overflow-hidden">
+                            <table class="min-w-full bg-white">
+                                <thead class="bg-gray-800 text-white">
+                                    <tr>
+                                        <th class="w-4/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tiêu đề</th>
+                                        <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Loại</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-700">`;
+                snapshot.forEach(doc => {
+                    const module = doc.data();
+                    html += `<tr>
+                                <td class="w-4/5 text-left py-3 px-4">${module.title}</td>
+                                <td class="text-left py-3 px-4">${module.type}</td>
+                             </tr>`;
+                });
+                html += `</tbody></table></div>`;
+                document.getElementById('content-display').innerHTML = html;
+            } catch (error) {
+                document.getElementById('content-display').innerHTML = `<p class="text-red-500">Lỗi khi tải học phần bổ sung: ${error.message}</p>`;
+            }
         }
 
-
-        function renderAssignmentManagement() { /* ... */ }
+        function renderAssignmentManagement() {
+            pageTitle.textContent = 'Quản Lý Bài Tập';
+            mainContent.innerHTML = `
+                <div class="grid grid-cols-1 gap-6">
+                    <a href="admin_assignment_tool.html" target="_blank" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 class="text-xl font-bold text-purple-600">Giao Bài Tập Mới</h3>
+                        <p class="mt-2 text-gray-600">Tạo bài tập về nhà mới và giao cho các lớp học.</p>
+                    </a>
+                </div>`;
+        }
 
         let draggedItem = null;
         mainContent.addEventListener('click', async (e) => {
@@ -336,7 +406,7 @@ const firebaseConfig = {
             if (e.target.id === 'add-curriculum-btn') {
                 const name = document.getElementById('new-curriculum-name').value;
                 if (!name.trim()) return alert('Vui lòng nhập tên giáo trình.');
-                await db.collection('curriculums').add({ name: name, modules: [] });
+                await db.collection('curriculums').add({ name: name });
                 await renderCurriculumTab();
             }
             if (e.target.classList.contains('manage-curriculum-btn')) {
@@ -377,18 +447,24 @@ const firebaseConfig = {
             const dropZone = e.target.closest('.drop-zone');
             if (dropZone && draggedItem) {
                 dropZone.classList.remove('drag-over');
+                const sourceZone = draggedItem.parentElement;
                 dropZone.appendChild(draggedItem);
 
                 const curriculumId = document.getElementById('curriculum-modules').dataset.id;
-                const modulesInCurriculum = Array.from(document.querySelectorAll('#curriculum-modules .draggable-item'));
+                const curriculumModulesRef = db.collection('curriculums').doc(curriculumId).collection('modules');
                 
-                const newModulesArray = modulesInCurriculum.map(item => ({
-                    contentId: item.dataset.id,
-                    title: item.dataset.title,
-                    type: item.dataset.type
-                }));
+                const droppedData = {
+                    title: draggedItem.dataset.title,
+                    type: draggedItem.dataset.type
+                };
 
-                await db.collection('curriculums').doc(curriculumId).update({ modules: newModulesArray });
+                if (sourceZone.id === 'available-modules' && dropZone.id === 'curriculum-modules') {
+                    // Add to curriculum
+                    await curriculumModulesRef.doc(draggedItem.dataset.id).set(droppedData);
+                } else if (sourceZone.id === 'curriculum-modules' && dropZone.id === 'available-modules') {
+                    // Remove from curriculum
+                    await curriculumModulesRef.doc(draggedItem.dataset.id).delete();
+                }
             }
         });
         
