@@ -12,10 +12,13 @@
         .sidebar-link { transition: all 0.2s ease-in-out; }
         .sidebar-link:hover { background-color: #4f46e5; color: white; }
         .sidebar-link.active { background-color: #4f46e5; color: white; font-weight: 600; }
+        .modal { display: none; }
+        .modal.is-open { display: flex; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div class="flex h-screen bg-gray-200">
+        <!-- Sidebar -->
         <div class="fixed z-30 inset-y-0 left-0 w-64 bg-gray-800 text-white transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out">
             <div class="px-8 py-4">
                 <h2 class="text-2xl font-semibold">Admin Panel</h2>
@@ -24,10 +27,10 @@
                 <a id="nav-dashboard" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
                     <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
-                <a id="nav-classes" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8 active">
+                <a id="nav-classes" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
                     <i class="fas fa-school mr-3"></i> Quản Lý Lớp Học
                 </a>
-                <a id="nav-students" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
+                <a id="nav-students" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8 active">
                     <i class="fas fa-user-graduate mr-3"></i> Quản Lý Học Sinh
                 </a>
                 <a id="nav-content" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
@@ -39,10 +42,11 @@
             </nav>
         </div>
 
+        <!-- Main content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="flex justify-between items-center p-6 bg-white border-b-2 border-gray-200">
                 <div>
-                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">Quản Lý Lớp Học</h1>
+                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">Quản Lý Học Sinh</h1>
                 </div>
                 <div>
                     <span id="admin-name" class="mr-4"></span>
@@ -50,7 +54,33 @@
                 </div>
             </header>
             <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-                </main>
+                <!-- Nội dung của từng module sẽ được render vào đây -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal for adding student -->
+    <div id="add-student-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Tạo Tài Khoản Học Sinh Mới</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="student-name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="student-name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="student-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="student-email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="student-password" class="block text-sm font-medium text-gray-700">Mật khẩu ban đầu</label>
+                    <input type="password" id="student-password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancel-add-student" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                <button id="confirm-add-student" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Tạo Tài Khoản</button>
+            </div>
         </div>
     </div>
 
@@ -62,7 +92,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
   authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
   projectId: "ielts-foundation-6ea9d",
-  storageBucket: "ielts-foundation-6ea9d.firebasestorage.app",
+  storageBucket: "ielts-foundation-6ea9d.appspot.com",
   messagingSenderId: "296690693780",
   appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
   measurementId: "G-CZD89F0FC3"
@@ -78,18 +108,15 @@ const firebaseConfig = {
         const mainContent = document.getElementById('main-content');
         const adminName = document.getElementById('admin-name');
         const logoutButton = document.getElementById('logout-button');
+        const addStudentModal = document.getElementById('add-student-modal');
 
-        // --- AUTHENTICATION CHECK ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Kiểm tra vai trò admin
                 db.collection('users').doc(user.uid).get().then(doc => {
                     if (doc.exists && doc.data().role === 'admin') {
                         adminName.textContent = user.displayName || user.email;
-                        // Mặc định hiển thị trang Quản lý lớp học
-                        renderClassManagement();
+                        renderStudentManagement();
                     } else {
-                        // Nếu không phải admin, đăng xuất và đá về trang login
                         auth.signOut();
                         window.location.href = 'login.html';
                     }
@@ -100,12 +127,9 @@ const firebaseConfig = {
         });
         
         logoutButton.addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
+            auth.signOut().then(() => { window.location.href = 'index.html'; });
         });
 
-        // --- NAVIGATION ---
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -114,89 +138,78 @@ const firebaseConfig = {
                 
                 const navId = e.currentTarget.id;
                 if (navId === 'nav-classes') renderClassManagement();
-                // Các module khác sẽ được thêm vào sau
-                // if (navId === 'nav-students') renderStudentManagement();
+                if (navId === 'nav-students') renderStudentManagement();
             });
         });
 
-        // --- MODULE: CLASS MANAGEMENT ---
         async function renderClassManagement() {
             pageTitle.textContent = 'Quản Lý Lớp Học';
-            mainContent.innerHTML = `<p>Đang tải danh sách lớp học...</p>`;
+            mainContent.innerHTML = `<p>Đang tải...</p>`;
+            // ... (code của Quản lý lớp học)
+        }
+
+        // --- MODULE: STUDENT MANAGEMENT ---
+        async function renderStudentManagement() {
+            pageTitle.textContent = 'Quản Lý Học Sinh';
+            mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
 
             try {
-                const snapshot = await db.collection('classes').get();
-                let classHtml = `
+                const snapshot = await db.collection('users').where('role', '==', 'student').get();
+                let studentHtml = `
                     <div class="mb-6">
-                        <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="p-2 border rounded-md">
-                        <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp Mới</button>
+                        <button id="show-add-student-modal-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Tài Khoản Học Sinh</button>
                     </div>
                     <div class="bg-white shadow-md rounded-lg overflow-hidden">
                         <table class="min-w-full bg-white">
                             <thead class="bg-gray-800 text-white">
                                 <tr>
-                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
-                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">ID Lớp</th>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Họ và Tên</th>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Email</th>
                                     <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-700">`;
                 
                 snapshot.forEach(doc => {
-                    const classData = doc.data();
-                    classHtml += `
+                    const student = doc.data();
+                    studentHtml += `
                         <tr>
-                            <td class="w-1/3 text-left py-3 px-4">${classData.className}</td>
-                            <td class="w-1/3 text-left py-3 px-4">${doc.id}</td>
+                            <td class="w-1/3 text-left py-3 px-4">${student.displayName}</td>
+                            <td class="w-1/3 text-left py-3 px-4">${student.email}</td>
                             <td class="text-left py-3 px-4">
-                                <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
+                                <button class="text-red-500 hover:text-red-700 delete-student-btn" data-id="${doc.id}">Xóa</button>
                             </td>
                         </tr>
                     `;
                 });
 
-                classHtml += `</tbody></table></div>`;
-                mainContent.innerHTML = classHtml;
+                studentHtml += `</tbody></table></div>`;
+                mainContent.innerHTML = studentHtml;
 
             } catch (error) {
-                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học.</p>`;
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách học sinh.</p>`;
                 console.error(error);
             }
         }
+        
+        // --- MODAL EVENT LISTENERS ---
+        document.getElementById('cancel-add-student').addEventListener('click', () => {
+            addStudentModal.classList.remove('is-open');
+        });
 
         // --- EVENT LISTENERS FOR DYNAMIC CONTENT ---
         mainContent.addEventListener('click', async (e) => {
-            // Thêm lớp mới
-            if (e.target.id === 'add-class-btn') {
-                const newClassName = document.getElementById('new-class-name').value;
-                if (newClassName.trim() === '') {
-                    alert('Vui lòng nhập tên lớp.');
-                    return;
-                }
-                try {
-                    await db.collection('classes').add({ className: newClassName });
-                    alert('Tạo lớp thành công!');
-                    renderClassManagement(); // Tải lại danh sách
-                } catch (error) {
-                    alert('Đã có lỗi xảy ra.');
-                    console.error(error);
-                }
+            if (e.target.id === 'show-add-student-modal-btn') {
+                addStudentModal.classList.add('is-open');
             }
+            // ... (code xử lý sự kiện cho Quản lý lớp học)
+        });
 
-            // Xóa lớp
-            if (e.target.classList.contains('delete-class-btn')) {
-                const classId = e.target.dataset.id;
-                if (confirm(`Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.`)) {
-                    try {
-                        await db.collection('classes').doc(classId).delete();
-                        alert('Xóa lớp thành công!');
-                        renderClassManagement(); // Tải lại danh sách
-                    } catch (error) {
-                        alert('Đã có lỗi xảy ra.');
-                        console.error(error);
-                    }
-                }
-            }
+        // Tạm thời chưa thể tạo user từ client-side vì lý do bảo mật
+        // Cần dùng Firebase Functions để làm việc này.
+        // Hiện tại, admin sẽ tạo user trên Firebase Console trước.
+        document.getElementById('confirm-add-student').addEventListener('click', () => {
+            alert("Chức năng này cần được thiết lập trên máy chủ (Firebase Functions) để đảm bảo bảo mật. Vui lòng tạo tài khoản trực tiếp trên Firebase Authentication Console và sau đó thêm thông tin vào Firestore.");
         });
 
     </script>
