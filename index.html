@@ -84,23 +84,17 @@
                     querySnapshot.forEach((doc) => {
                         const exam = doc.data();
                         const li = document.createElement('li');
-                        li.innerHTML = `<span>${exam.title}</span> <button onclick="startExam('${doc.id}', '${exam.accessCode}')">Bắt đầu</button>`;
+                       // Thay thế dòng li.innerHTML cũ
+li.innerHTML = `<span>${exam.title}</span> <button onclick="startExam('${doc.id}')">Bắt đầu</button>`;
                         examList.appendChild(li);
                     });
                 });
         }
         
-        function startExam(testId, correctCode) {
-            const userCode = prompt("Vui lòng nhập mã truy cập bài thi:");
-            if (userCode === null) return; // Người dùng nhấn cancel
-
-            if (userCode === correctCode) {
-                // Chuyển hướng đến trang thi và truyền ID của bài thi qua URL
-                window.location.href = `reading.html?testId=${testId}`;
-            } else {
-                alert("Mã truy cập không đúng!");
-            }
-        }
+      function startExam(testId) {
+    // Chỉ cần chuyển hướng đến trang thi, không cần hỏi mã ở đây nữa
+    window.location.href = `reading.html?testId=${testId}`;
+}
 
         auth.onAuthStateChanged(user => {
             if (user) {
