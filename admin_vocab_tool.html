@@ -72,10 +72,11 @@
 
         // [FIX] Hàm parseCsv được viết lại hoàn toàn để xử lý dấu phẩy trong dữ liệu
         function parseCsv(csvText) {
-            const lines = csvText.trim().split('\n');
-            if (lines.length < 1) return [];
+            const lines = csvText.trim().split(/\r\n|\n/); // Hỗ trợ cả Windows và Unix line endings
+            if (lines.length < 2) return [];
 
             const headerLine = lines.shift();
+            // Xử lý trường hợp header có dấu ngoặc kép
             const headers = headerLine.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
             
             const rows = lines.map(line => {
@@ -85,17 +86,19 @@
                 
                 headers.forEach((header, index) => {
                     let value = (values[index] || '').trim();
-                    // Remove quotes if they exist at the start and end
+                    // Bỏ dấu ngoặc kép nếu có ở đầu và cuối
                     if (value.startsWith('"') && value.endsWith('"')) {
                         value = value.substring(1, value.length - 1);
                     }
-                    row[header] = value.replace(/""/g, '"'); // Handle escaped quotes
+                    // Xử lý trường hợp "" bên trong (dấu ngoặc kép escape)
+                    row[header] = value.replace(/""/g, '"'); 
                 });
                 return row;
             });
 
             return rows;
         }
+
 
         function processDataSmart(vocabData, structureData) {
             const statusEl = document.getElementById('status');
@@ -111,6 +114,7 @@
                 let found = false;
                 for (const word of vocabWords) {
                     if (!word) continue;
+                    // Regex để tìm từ gốc một cách chính xác
                     const regex = new RegExp(`\\b${word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
                     if (regex.test(structureText)) {
                         structuresWithRootWord.push({ ...struct, word: word });
@@ -167,6 +171,10 @@
                 const vocabData = parseCsv(vocabCsv);
                 const structureData = parseCsv(structureCsv);
                 
+                if (vocabData.length === 0) {
+                    throw new Error("Không đọc được dữ liệu từ `vocab.csv`. Vui lòng kiểm tra lại định dạng.");
+                }
+
                 const processedWords = processDataSmart(vocabData, structureData);
                 
                 const finalDataObject = {
