@@ -50,6 +50,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
+        // Dán firebaseConfig của bạn vào đây
 const firebaseConfig = {
   apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
   authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
@@ -76,13 +77,11 @@ const firebaseConfig = {
 
         auth.onAuthStateChanged(async user => {
             if (user) {
-                // User is signed in.
                 userDisplayName.textContent = user.displayName || user.email;
                 await loadUserClasses(user.uid);
                 mainContent.classList.remove('hidden');
                 loadingState.classList.add('hidden');
             } else {
-                // No user is signed in. Redirect to login.
                 window.location.href = 'login.html';
             }
         });
@@ -102,11 +101,10 @@ const firebaseConfig = {
                     return;
                 }
 
-                // Lấy thông tin chi tiết của từng lớp
                 const classPromises = enrolledClasses.map(classId => db.collection('classes').doc(classId).get());
                 const classDocs = await Promise.all(classPromises);
 
-                classSelector.innerHTML = '<option value="">-- Chọn lớp học --</option>'; // Reset
+                classSelector.innerHTML = '<option value="">-- Chọn lớp học --</option>';
                 classDocs.forEach(doc => {
                     if (doc.exists) {
                         const classData = doc.data();
@@ -134,9 +132,9 @@ const firebaseConfig = {
         async function loadAssignments(classId) {
             assignmentsList.innerHTML = '<p>Đang tải bài tập...</p>';
             try {
+                // [FIX] Bỏ orderBy để tránh lỗi thiếu index trên Firestore
                 const snapshot = await db.collection('assignments')
                                          .where('classId', '==', classId)
-                                         .orderBy('assignmentDate', 'desc')
                                          .get();
 
                 if (snapshot.empty) {
@@ -144,13 +142,20 @@ const firebaseConfig = {
                     return;
                 }
 
-                assignmentsList.innerHTML = ''; // Clear loading message
+                // [FIX] Lấy dữ liệu và sắp xếp bằng JavaScript
+                let assignments = [];
                 snapshot.forEach(doc => {
-                    const assignment = doc.data();
+                    assignments.push({ id: doc.id, ...doc.data() });
+                });
+                assignments.sort((a, b) => b.assignmentDate.toDate() - a.assignmentDate.toDate());
+
+
+                assignmentsList.innerHTML = ''; // Xóa thông báo đang tải
+                assignments.forEach(assignment => {
                     const assignmentDate = assignment.assignmentDate.toDate().toLocaleDateString('vi-VN');
                     
                     const assignmentEl = document.createElement('a');
-                    assignmentEl.href = `assignment.html?id=${doc.id}`;
+                    assignmentEl.href = `assignment.html?id=${assignment.id}`;
                     assignmentEl.className = 'block bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow';
                     
                     assignmentEl.innerHTML = `
