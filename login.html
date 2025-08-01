@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập</title>
+    <title>Đăng nhập - English with Thành Nam</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -14,8 +14,8 @@
     <div class="w-full max-w-md">
         <div class="bg-white shadow-2xl rounded-2xl px-8 pt-10 pb-12 mb-4">
             <div class="mb-8 text-center">
-                <h1 class="text-3xl font-bold text-gray-800">Chào mừng trở lại!</h1>
-                <p class="text-gray-500 mt-2">Đăng nhập để tiếp tục học tập.</p>
+                <h1 class="text-3xl font-bold text-gray-800">Chào mừng!</h1>
+                <p class="text-gray-500 mt-2">Đăng nhập để vào hệ thống học tập.</p>
             </div>
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
@@ -29,7 +29,7 @@
                 </label>
                 <input class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" id="password" type="password" placeholder="******************">
             </div>
-            <p id="error-message" class="text-red-500 text-xs italic mb-4 text-center"></p>
+            <p id="error-message" class="text-red-500 text-xs italic mb-4 text-center h-4"></p>
             <div class="flex items-center justify-center">
                 <button id="login-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-all transform hover:scale-105" type="button">
                     Đăng Nhập
@@ -40,42 +40,84 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
         // Dán firebaseConfig của bạn vào đây
-    const firebaseConfig = {
-  apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-  authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-  projectId: "ielts-foundation-6ea9d",
-  storageBucket: "ielts-foundation-6ea9d.firebasestorage.app",
-  messagingSenderId: "296690693780",
-  appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
-  measurementId: "G-CZD89F0FC3"
-};
+        const firebaseConfig = {
+            apiKey: "...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
         
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const auth = firebase.auth();
+        const db = firebase.firestore();
 
         const loginButton = document.getElementById('login-button');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const errorMessage = document.getElementById('error-message');
 
-        loginButton.addEventListener('click', () => {
+        const handleLogin = () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             errorMessage.textContent = '';
+            loginButton.disabled = true;
+            loginButton.textContent = 'Đang xử lý...';
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Đăng nhập thành công, chuyển hướng đến bảng điều khiển
-                    window.location.href = 'dashboard.html';
+                    // Đăng nhập thành công, bây giờ kiểm tra vai trò
+                    const user = userCredential.user;
+                    checkUserRoleAndRedirect(user.uid);
                 })
                 .catch((error) => {
-                    errorMessage.textContent = 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.';
-                    console.error("Lỗi đăng nhập:", error);
+                    errorMessage.textContent = 'Email hoặc mật khẩu không đúng.';
+                    loginButton.disabled = false;
+                    loginButton.textContent = 'Đăng Nhập';
                 });
+        };
+        
+        const checkUserRoleAndRedirect = (userId) => {
+            const userDocRef = db.collection('users').doc(userId);
+
+            userDocRef.get().then((doc) => {
+                if (doc.exists) {
+                    const userData = doc.data();
+                    const role = userData.role;
+
+                    if (role === 'admin') {
+                        // Chuyển hướng đến trang admin
+                        window.location.href = 'admin_dashboard.html';
+                    } else {
+                        // Mặc định chuyển hướng đến trang học sinh
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    // Trường hợp hiếm: user tồn tại trong Auth nhưng không có trong Firestore
+                    errorMessage.textContent = 'Lỗi: Không tìm thấy thông tin người dùng.';
+                    auth.signOut(); // Đăng xuất để tránh bị kẹt
+                    loginButton.disabled = false;
+                    loginButton.textContent = 'Đăng Nhập';
+                }
+            }).catch((error) => {
+                errorMessage.textContent = 'Lỗi khi kiểm tra vai trò người dùng.';
+                console.error("Lỗi Firestore:", error);
+                loginButton.disabled = false;
+                loginButton.textContent = 'Đăng Nhập';
+            });
+        };
+
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
         });
     </script>
 </body>
