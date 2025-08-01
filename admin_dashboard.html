@@ -12,12 +12,11 @@
         .sidebar-link { transition: all 0.2s ease-in-out; }
         .sidebar-link:hover { background-color: #4f46e5; color: white; }
         .sidebar-link.active { background-color: #4f46e5; color: white; font-weight: 600; }
-        .modal { display: none; }
-        .modal.is-open { display: flex; }
         .tab-button.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
         .draggable-item { cursor: grab; }
         .drop-zone { min-height: 100px; background-color: #f9fafb; border: 2px dashed #d1d5db; transition: all 0.2s ease; }
         .drop-zone.drag-over { background-color: #eef2ff; border-color: #4f46e5; }
+        textarea { resize: vertical; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -248,7 +247,7 @@ const firebaseConfig = {
                 <div class="mb-4 border-b border-gray-200">
                     <nav class="flex space-x-4" aria-label="Tabs">
                         <button id="tab-curriculums" class="tab-button active px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Quản Lý Giáo Trình</button>
-                        <button id="tab-supplementary" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Học Phần Bổ Sung</button>
+                        <button id="tab-vocab-tool" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Tạo Học Phần Từ Vựng</button>
                     </nav>
                 </div>
                 <div id="content-display"></div>`;
@@ -336,45 +335,73 @@ const firebaseConfig = {
             }
         }
 
-        async function renderSupplementaryTab() {
-            document.getElementById('content-display').innerHTML = `<p>Đang tải học phần bổ sung...</p>`;
+        async function renderAssignmentManagement() {
+            pageTitle.textContent = 'Giao Bài Tập';
+            mainContent.innerHTML = `<p>Đang tải...</p>`;
             try {
-                const snapshot = await db.collection('supplementary_modules').get();
-                let html = `<div class="bg-white shadow-md rounded-lg overflow-hidden">
-                            <table class="min-w-full bg-white">
-                                <thead class="bg-gray-800 text-white">
-                                    <tr>
-                                        <th class="w-4/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tiêu đề</th>
-                                        <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Loại</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-gray-700">`;
-                snapshot.forEach(doc => {
-                    const module = doc.data();
-                    html += `<tr>
-                                <td class="w-4/5 text-left py-3 px-4">${module.title}</td>
-                                <td class="text-left py-3 px-4">${module.type}</td>
-                             </tr>`;
-                });
-                html += `</tbody></table></div>`;
-                document.getElementById('content-display').innerHTML = html;
+                const [classesSnap, supplementarySnap] = await Promise.all([
+                    db.collection("classes").get(),
+                    db.collection("supplementary_modules").get()
+                ]);
+
+                const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const supplementaryModules = supplementarySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                let classOptions = classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+                let supplementaryHtml = supplementaryModules.map(m => `
+                    <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                        <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${m.id}" data-type="supplementary">
+                        <span class="ml-3 text-sm text-gray-800">${m.title}</span>
+                    </label>`).join('');
+
+                mainContent.innerHTML = `
+                    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+                        <div class="space-y-6">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="md:col-span-1">
+                                        <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label>
+                                        <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                            <option value="">-- Chọn một lớp --</option>
+                                            ${classOptions}
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
+                                        <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày 02/08/2025">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border-t pt-6">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Chọn Học Phần Để Giao</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 id="core-modules-title" class="font-bold text-gray-700 mb-2">Học phần trong Giáo trình</h3>
+                                        <div id="core-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                            <p class="text-gray-500">Vui lòng chọn một lớp học để xem các học phần.</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-700 mb-2">Học phần Bổ sung</h3>
+                                        <div id="supplementary-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                            ${supplementaryHtml}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
+                                Tạo Bài Tập
+                            </button>
+                        </div>
+                    </div>`;
             } catch (error) {
-                document.getElementById('content-display').innerHTML = `<p class="text-red-500">Lỗi khi tải học phần bổ sung: ${error.message}</p>`;
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải dữ liệu: ${error.message}</p>`;
             }
         }
-
-        function renderAssignmentManagement() {
-            pageTitle.textContent = 'Quản Lý Bài Tập';
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-1 gap-6">
-                    <a href="admin_assignment_tool.html" target="_blank" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-xl font-bold text-purple-600">Giao Bài Tập Mới</h3>
-                        <p class="mt-2 text-gray-600">Tạo bài tập về nhà mới và giao cho các lớp học.</p>
-                    </a>
-                </div>`;
-        }
-
-        let draggedItem = null;
+        
+        // --- EVENT LISTENERS ---
+         let draggedItem = null;
         mainContent.addEventListener('click', async (e) => {
             if (e.target.id === 'add-class-btn') {
                 const newClassName = document.getElementById('new-class-name').value;
@@ -469,6 +496,7 @@ const firebaseConfig = {
                 }
             }
         });
+
         
     </script>
 </body>
