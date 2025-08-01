@@ -31,12 +31,12 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="vocabCsv" class="block text-sm font-medium text-gray-700 mb-1">4. Dán nội dung file `vocab.csv`:</label>
-                    <textarea id="vocabCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Word,Type,Pronunciation,Meaning..."></textarea>
+                    <label for="vocabCsv" class="block text-sm font-medium text-gray-700 mb-1">4. Dán nội dung từ vựng (ngăn cách bằng TAB):</label>
+                    <textarea id="vocabCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Word	Type	Pronunciation	Meaning..."></textarea>
                 </div>
                 <div>
-                    <label for="structureCsv" class="block text-sm font-medium text-gray-700 mb-1">5. Dán nội dung file `structure.csv`:</label>
-                    <textarea id="structureCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Cấu trúc / Idiom / Cụm từ,Ý nghĩa..."></textarea>
+                    <label for="structureCsv" class="block text-sm font-medium text-gray-700 mb-1">5. Dán nội dung cấu trúc (ngăn cách bằng TAB):</label>
+                    <textarea id="structureCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Cấu trúc / Idiom / Cụm từ	Ý nghĩa..."></textarea>
                 </div>
             </div>
 
@@ -70,27 +70,23 @@
             }
         }
 
-        // [FIX] Hàm parseCsv được viết lại hoàn toàn để xử lý dấu phẩy trong dữ liệu
-        function parseCsv(csvText) {
-            const lines = csvText.trim().split(/\r\n|\n/); // Hỗ trợ cả Windows và Unix line endings
+        // [FIX] Hàm parseData được nâng cấp để đọc dữ liệu ngăn cách bằng TAB (TSV)
+        function parseData(tsvText) {
+            const lines = tsvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
 
             const headerLine = lines.shift();
-            // Xử lý trường hợp header có dấu ngoặc kép
-            const headers = headerLine.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+            const headers = headerLine.split('\t').map(h => h.trim().toLowerCase().replace(/"/g, ''));
             
             const rows = lines.map(line => {
                 const row = {};
-                // Regex to split by comma but ignore commas inside double quotes
-                const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                const values = line.split('\t');
                 
                 headers.forEach((header, index) => {
                     let value = (values[index] || '').trim();
-                    // Bỏ dấu ngoặc kép nếu có ở đầu và cuối
                     if (value.startsWith('"') && value.endsWith('"')) {
                         value = value.substring(1, value.length - 1);
                     }
-                    // Xử lý trường hợp "" bên trong (dấu ngoặc kép escape)
                     row[header] = value.replace(/""/g, '"'); 
                 });
                 return row;
@@ -102,7 +98,7 @@
 
         function processDataSmart(vocabData, structureData) {
             const statusEl = document.getElementById('status');
-            statusEl.innerHTML += "<br>🧠 Bắt đầu liên kết cấu trúc thông minh...";
+            statusEl.innerHTML += "<br>� Bắt đầu liên kết cấu trúc thông minh...";
 
             const vocabWords = vocabData.map(v => v.word);
             let structuresWithRootWord = [];
@@ -114,7 +110,6 @@
                 let found = false;
                 for (const word of vocabWords) {
                     if (!word) continue;
-                    // Regex để tìm từ gốc một cách chính xác
                     const regex = new RegExp(`\\b${word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
                     if (regex.test(structureText)) {
                         structuresWithRootWord.push({ ...struct, word: word });
@@ -168,11 +163,11 @@
 
             try {
                 statusEl.textContent = 'Bắt đầu xử lý dữ liệu...';
-                const vocabData = parseCsv(vocabCsv);
-                const structureData = parseCsv(structureCsv);
+                const vocabData = parseData(vocabCsv);
+                const structureData = parseData(structureCsv);
                 
                 if (vocabData.length === 0) {
-                    throw new Error("Không đọc được dữ liệu từ `vocab.csv`. Vui lòng kiểm tra lại định dạng.");
+                    throw new Error("Không đọc được dữ liệu từ vựng. Vui lòng kiểm tra lại định dạng (ngăn cách bằng TAB).");
                 }
 
                 const processedWords = processDataSmart(vocabData, structureData);
@@ -197,3 +192,4 @@
     </script>
 </body>
 </html>
+�
