@@ -232,7 +232,6 @@
             let currentTestId = null;
             let enteredCode = null;
             let isAuthCheckComplete = false;
-            let mainAppInstance = null;
             
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
@@ -249,13 +248,19 @@
                 matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
             };
             
-            const MainAppController = (examData) => {
+            const mainApp = (examData) => {
                 let userAnswers = {};
                 let timerInterval;
                 let isResizing = false;
                 let dragged = null;
                 const questionDataMap = new Map();
-                
+
+                const updateAnswer = (qNum, value) => {
+                    const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
+                    if (value && String(value).trim() !== "") { userAnswers[qNum] = value; navItem?.classList.add('answered'); } 
+                    else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
+                };
+
                 const submitTest = async () => {
                     clearInterval(timerInterval);
                     let score = 0;
@@ -269,7 +274,7 @@
 
                     document.getElementById('result-modal').innerHTML = `<div class="modal-content glass-effect"><h2>Hoàn thành!</h2><p>Điểm số của bạn:</p><p id="modal-score" style="font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0;">${score} / ${questionDataMap.size}</p><button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button></div>`;
                     document.getElementById('result-modal').classList.add('show');
-                    document.getElementById('close-modal-btn').addEventListener('click', showReview);
+                    document.getElementById('close-modal-btn').addEventListener('click', () => showReview(userAnswers, questionDataMap));
 
                     if (currentUser && currentTestId && enteredCode) {
                         db.collection("results").add({ studentUid: currentUser.uid, studentEmail: currentUser.email, studentName: currentUser.displayName || "", testId: currentTestId, codeUsed: enteredCode, answers: userAnswers, score: score, totalQuestions: questionDataMap.size, submittedAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -285,62 +290,65 @@
                         fetch(WEB_APP_URL, { method: 'POST', body: formData }).catch(err => console.error("Lỗi gửi điểm đến Sheet:", err));
                     }
                 };
-                
-                 const showReview = () => {
-                resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
-                document.getElementById('submit-btn').style.display = 'none';
-                document.getElementById('review-btn').style.display = 'block';
-                document.querySelectorAll('input, select').forEach(el => el.disabled = true);
-                document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
-                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
-                passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0;
 
-                questionDataMap.forEach((data, qNum) => {
-                    const userAnswer = userAnswers[qNum];
-                    const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
-                    if (!qContainer) return;
-                    const isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
-                    const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
-                    const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
-                    parent.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    if (!isCorrect) {
-                        const correctAnsEl = document.createElement('span');
-                        correctAnsEl.className = 'correct-answer-text';
-                        let correctAnswerText = data.answer;
-                        if (data.type === 'multiple_choice_one_answer') {
-                            const correctIndex = parseInt(data.answer);
-                            const optionText = qContainer.querySelectorAll('span')[correctIndex + 1]?.textContent;
-                            correctAnswerText = optionText || data.answer;
-                        } else if (data.type === 'matching_features') {
-                            const correctIndex = data.answer.charCodeAt(0) - 65;
-                            correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex + 1]?.text;
-                        }
-                        correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
-                        if (!parent.querySelector('.correct-answer-text')) {
-                            (parent.parentElement || parent).appendChild(correctAnsEl);
-                        }
-                    }
-                });
-            };
-                
-                const updateAnswer = (qNum, value) => {
-                    const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
-                    if (value && String(value).trim() !== "") { userAnswers[qNum] = value; navItem?.classList.add('answered'); } 
-                    else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
+                const showReview = (userAnswers, questionDataMap) => {
+                    document.getElementById('result-modal').classList.remove('show');
+                    document.body.classList.add('review-mode');
+                    document.getElementById('submit-btn').style.display = 'none';
+                    document.getElementById('review-btn').style.display = 'block';
+                    document.querySelectorAll('input, select').forEach(el => el.disabled = true);
                 };
 
                 const showPassageAndQuestions = (passageNum) => {
                     document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
                     document.getElementById(`passage-container-${passageNum}`).style.display = 'block';
                     document.querySelectorAll(`.question-block[data-passage="${passageNum}"]`).forEach(q => q.style.display = 'block');
+                    document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('hidden', item.dataset.passageNum !== String(passageNum)));
                 };
 
-                examContainerEl.innerHTML = `<div class="unified-panel"><header class="exam-header glass-effect"><div class="header-left"><span>IELTS</span></div><div class="header-center" id="exam-title">Reading Test</div><div class="header-right"><div id="timer">60:00</div></div></header><main class="main-content"><div class="panel passage-panel" id="passage-panel"></div><div id="resizer"></div><div class="panel questions-panel" id="questions-panel"></div></main><footer class="exam-footer glass-effect"><div class="navigation-controls"><div class="nav-left-group"><select id="passage-select" class="themed-select"></select><div id="navigation-pane" class="navigation-pane"></div></div><div class="footer-buttons"><button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div></div></footer></div>`;
+                const handleMouseMove = (e) => {
+                    if (!isResizing) return;
+                    const container = document.querySelector('.exam-container');
+                    const passagePanel = document.querySelector('.passage-panel');
+                    const newLeftWidth = e.clientX - container.offsetLeft;
+                    if (newLeftWidth > 200 && (container.offsetWidth - newLeftWidth) > 200) {
+                        passagePanel.style.width = `${newLeftWidth}px`;
+                    }
+                };
+
+                const stopResizing = () => {
+                    isResizing = false;
+                    document.removeEventListener('mouseup', stopResizing);
+                    document.removeEventListener('mousemove', handleMouseMove);
+                };
+
+                const initializeListeners = () => {
+                    const questionsEl = document.getElementById('questions-panel');
+                    const passageSelectEl = document.getElementById('passage-select');
+                    const resizerEl = document.getElementById('resizer');
+
+                    questionsEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
+                    questionsEl.addEventListener('change', e => {
+                        const qNum = e.target.name?.replace('q', '') || e.target.dataset.qNum;
+                        if(qNum) updateAnswer(qNum, e.target.value);
+                    });
+                    
+                    passageSelectEl.addEventListener('change', e => showPassageAndQuestions(e.target.value));
+                    document.getElementById('submit-btn').addEventListener('click', () => {
+                        document.getElementById('confirm-submit-modal').classList.add('show');
+                        document.getElementById('confirm-submit-yes').onclick = () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); };
+                        document.getElementById('confirm-submit-no').onclick = () => document.getElementById('confirm-submit-modal').classList.remove('show');
+                    });
+                    resizerEl.addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
+                };
+
+                examContainerEl.innerHTML = `<div class="unified-panel"><header class="exam-header glass-effect"><div class="header-left"><span>IELTS</span></div><div class="header-center" id="exam-title"></div><div class="header-right"><div id="timer">60:00</div></div></header><main class="main-content"><div class="panel passage-panel" id="passage-panel"></div><div id="resizer"></div><div class="panel questions-panel" id="questions-panel"></div></main><footer class="exam-footer glass-effect"><div class="navigation-controls"><div class="nav-left-group"><select id="passage-select" class="themed-select"></select><div id="navigation-pane" class="navigation-pane"></div></div><div class="footer-buttons"><button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div></div></footer></div>`;
                 
                 document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
                 let navHtml = '';
                 examData.questionBlocks.forEach(block => {
-                    (block.items || Object.keys(block.answers || {})).forEach(item => {
+                    const q_items = block.items || Object.keys(block.answers || {});
+                    q_items.forEach(item => {
                         const qNum = item.qNum || item;
                         navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${block.passage}">${qNum}</div>`;
                         questionDataMap.set(String(qNum), { answer: item.answer || block.answers[qNum], type: block.type });
@@ -352,20 +360,11 @@
                 document.getElementById('questions-panel').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type] ? RENDERERS[block.type](block) : ''}</div>`).join('');
                 document.getElementById('passage-select').innerHTML = examData.passages.map(p => `<option value="${p.id}">Passage ${p.id}</option>`).join('');
 
+                initializeListeners();
                 showPassageAndQuestions(1);
-
-                document.getElementById('submit-btn').addEventListener('click', () => {
-                    document.getElementById('confirm-submit-modal').classList.add('show');
-                    document.getElementById('confirm-submit-yes').onclick = () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); };
-                    document.getElementById('confirm-submit-no').onclick = () => document.getElementById('confirm-submit-modal').classList.remove('show');
-                });
-
-                document.getElementById('questions-panel').addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
-                document.getElementById('questions-panel').addEventListener('change', e => {
-                    const qNum = e.target.name?.replace('q', '') || e.target.dataset.qNum;
-                    if(qNum) updateAnswer(qNum, e.target.value);
-                });
-
+                loadingOverlayEl.style.display = 'none';
+                examContainerEl.style.display = 'flex';
+                
                 let time = examData.timeLimitMinutes * 60;
                 const timerEl = document.getElementById('timer');
                 timerInterval = setInterval(() => {
@@ -387,9 +386,9 @@
             const validateAccessCodeAndStartExam = async (userCode) => {
                 if (!userCode || userCode.length !== 6) return;
                 
+                codeModalEl.classList.remove('show');
                 loadingOverlayEl.style.display = 'flex';
                 loadingOverlayEl.innerText = "Đang xác thực mã...";
-                codeErrorEl.innerText = "";
                 enteredCode = userCode.trim().toUpperCase();
                 const testRef = db.collection("tests").doc(currentTestId);
 
@@ -413,10 +412,8 @@
                         }
                         
                         if (!codeInfo.studentEmail) {
-                            codeModalEl.classList.remove('show');
                             studentName = await promptForName();
                             currentUser.displayName = studentName;
-                            nameModalEl.classList.remove('show');
                         }
                         
                         const updatedCodes = [...codes];
@@ -430,12 +427,13 @@
                         return data;
                     });
                     
-                    codeModalEl.classList.remove('show');
+                    nameModalEl.classList.remove('show');
                     loadingOverlayEl.innerText = "Đang tải đề thi...";
                     mainApp(testData);
 
                 } catch (error) {
                     loadingOverlayEl.style.display = 'none';
+                    codeModalEl.classList.add('show');
                     codeInputs.forEach(input => input.value = '');
                     codeInputs[0].focus();
                     codeErrorEl.innerText = error.message;
@@ -454,7 +452,6 @@
 
             auth.onAuthStateChanged(user => {
                 if (isAuthCheckComplete) return;
-
                 if (user) {
                     isAuthCheckComplete = true;
                     currentUser = user;
