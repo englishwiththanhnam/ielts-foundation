@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IELTS Reading Test</title>
     <style>
-        html {
-            font-size: 15px;
-        }
+        html { font-size: 15px; }
         :root {
             --panel-bg-color: rgba(255, 255, 255, 1);
             --glass-bg-color: rgba(255, 255, 255, 0.6);
@@ -18,14 +16,6 @@
             --text-secondary: #475569;
             --app-bg-start: #f5f7ff;
             --app-bg-end: #e0e7ff;
-            --correct-bg: #dcfce7;
-            --correct-border: #22c55e;
-            --correct-text: #15803d;
-            --incorrect-bg: #fee2e2;
-            --incorrect-border: #ef4444;
-            --incorrect-text: #b91c1c;
-            --transition-fast: all 0.2s ease-out;
-            --transition-medium: all 0.3s ease-out;
         }
         body.dark {
             --panel-bg-color: rgba(30, 41, 59, 1);
@@ -37,12 +27,6 @@
             --text-secondary: #94a3b8;
             --app-bg-start: #0f172a;
             --app-bg-end: #1e293b;
-            --correct-bg: #052e16;
-            --correct-border: #16a34a;
-            --correct-text: #a7f3d0;
-            --incorrect-bg: #450a0a;
-            --incorrect-border: #dc2626;
-            --incorrect-text: #fecaca;
         }
         body {
             font-family: 'Arial', sans-serif;
@@ -59,50 +43,25 @@
             box-sizing: border-box;
             margin: 0;
         }
-        .background-shapes { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .shape { position: absolute; border-radius: 50%; filter: blur(80px); transition: opacity 0.5s ease; }
-        .shape1 { width: 350px; height: 350px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); top: 5%; left: 5%; animation: float 28s infinite alternate ease-in-out; }
-        .shape2 { width: 280px; height: 280px; background: linear-gradient(135deg, #14b8a6, #67e8f9); bottom: 10%; right: 10%; animation: float 32s infinite alternate ease-in-out; }
-        body.dark .shape { opacity: 0.4; }
-        @keyframes float {
-            from { transform: translateY(20px) scale(1) rotate(0deg); }
-            to { transform: translateY(-20px) scale(1.05) rotate(20deg); }
-        }
         .exam-container { width: 100%; height: 100%; max-width: 1800px; position: relative; z-index: 1; display: flex; }
         .unified-panel { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 16px; overflow: hidden; background: var(--panel-bg-color); border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color); }
         .glass-effect { background: var(--glass-bg-color); backdrop-filter: blur(8px) saturate(120%); -webkit-backdrop-filter: blur(8px) saturate(120%); }
-        .exam-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; flex-shrink: 0; position: relative; border-bottom: 1px solid var(--glass-border-color); z-index: 10; }
-        .header-left span { font-weight: 700; font-size: 1.5rem; color: var(--text-primary); }
-        .header-center { font-weight: 600; font-size: 1.25rem; color: var(--text-secondary); }
-        .header-right { display: flex; align-items: center; gap: 20px; }
-        #timer { background-color: #dc3545; color: white; padding: 8px 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); }
         .btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
         .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
         .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
-        .btn-secondary { background: rgba(0, 0, 0, 0.05); color: var(--text-primary); }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
-        .modal.show { display: flex; opacity: 1; transform: scale(1); pointer-events: auto; }
-        .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; transition: transform 0.3s ease; transform: translateY(10px); }
-        .modal.show .modal-content { transform: translateY(0); }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+        .modal.show { display: flex; opacity: 1; }
+        .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; background: rgba(255, 255, 255, 0.8); }
         body.dark #loading-overlay { background: rgba(15, 23, 42, 0.8); }
         .input-modal .modal-content { max-width: 420px; padding: 32px; }
         .input-modal h2 { font-size: 1.75rem; color: var(--text-primary); margin-bottom: 8px; }
         .input-modal p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 24px; }
         #code-inputs { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; }
-        .code-input, #name-input { width: 100%; height: 60px; font-size: 1.5rem; text-align: center; border: 2px solid var(--glass-border-color); border-radius: 12px; background-color: rgba(0,0,0,0.05); color: var(--text-primary); outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: var(--primary-accent); padding: 0 10px; box-sizing: border-box; }
+        .code-input, #name-input { width: 100%; height: 60px; font-size: 1.5rem; text-align: center; border: 2px solid var(--glass-border-color); border-radius: 12px; background-color: rgba(0,0,0,0.05); color: var(--text-primary); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
         .code-input { width: 50px; font-size: 2rem; }
         .code-input:focus, #name-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3); }
-        .input-error { color: #ef4444; font-weight: 600; height: 20px; transition: opacity 0.2s; }
-        #name-modal-form { margin-bottom: 1rem; }
-        .main-content { display: flex; flex-grow: 1; overflow: hidden; background: var(--panel-bg-color); position: relative; }
-        .panel { padding: 24px; overflow-y: auto; height: 100%; box-sizing: border-box; }
-        .passage-panel, .questions-panel { width: 50%; }
-        #resizer { width: 8px; cursor: col-resize; background: transparent; flex-shrink: 0; }
-        .exam-footer { padding: 12px 24px; display: flex; align-items: center; flex-shrink: 0; border-top: 1px solid var(--glass-border-color); }
-        .navigation-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .navigation-pane { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding: 6px 0; }
-        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; }
+        .input-error { color: #ef4444; font-weight: 600; height: 20px; }
     </style>
 </head>
 <body>
@@ -130,7 +89,7 @@
             <p>Đây là một mã dự phòng. Vui lòng nhập họ và tên của bạn để tiếp tục.</p>
             <form id="name-modal-form">
                 <input type="text" id="name-input" placeholder="Nguyễn Văn A" required>
-                <button type="submit" id="name-submit-btn" class="btn btn-main-action" style="margin-top: 1rem;">Xác nhận</button>
+                <button type="submit" class="btn btn-main-action" style="margin-top: 1rem;">Xác nhận</button>
             </form>
             <p id="name-error" class="input-error"></p>
         </div>
@@ -138,26 +97,9 @@
 
     <div class="exam-container" style="display: none;"></div>
     
-    <div id="result-modal" class="modal">
-        <div class="modal-content glass-effect">
-            <h2>Hoàn thành bài thi!</h2>
-            <p>Điểm số của bạn là:</p>
-            <p id="modal-score" style="font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0;">0 / 40</p>
-            <button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button>
-        </div>
-    </div>
-    <div id="confirm-submit-modal" class="modal">
-        <div class="modal-content glass-effect">
-            <h2>Xác nhận nộp bài</h2>
-            <p style="color: var(--text-secondary); margin: 1rem 0;">Bạn có chắc chắn muốn nộp bài không?</p>
-            <div style="display: flex; justify-content: center; gap: 1rem;">
-                <button id="confirm-submit-no" class="btn btn-secondary">Không</button>
-                <button id="confirm-submit-yes" class="btn btn-main-action">Có, nộp bài</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
+    <div id="result-modal" class="modal"></div>
+    <div id="confirm-submit-modal" class="modal"></div>
+    <div class="background-shapes"></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -195,46 +137,17 @@
             let currentUser = null;
             let currentTestId = null;
             let enteredCode = null;
-            let isAuthCheckComplete = false;
 
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
-                multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
                 true_false_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['TRUE', 'FALSE', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
-                yes_no_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['YES', 'NO', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
-                note_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace(/______/g, `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
                 sentence_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace(/______/g, `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
-                custom_html_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.content}`,
-                summary_completion_from_text: block => `<p class="question-instruction">${block.instruction}</p><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span data-q-container="${qNum}"><b>${qNum}.</b> <input type="text" class="completion-input" data-q-num="${qNum}"></span>`)}</p>`,
-                table_completion: block => `<p class="question-instruction">${block.instruction}</p><table class="completion-table"><thead><tr>${block.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => typeof cell === 'object' ? `<td data-q-container="${cell.qNum}"><b>${cell.qNum}.</b> <input type="text" class="completion-input" data-q-num="${cell.qNum}"></td>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
-                matching_features: block => `<p class="question-instruction">${block.instruction}</p><div style="margin-bottom:1rem;line-height:1.5;">${block.features.map((f, i) => `<b>${String.fromCharCode(65+i)}</b>. ${f}`).join('<br>')}</div>${block.items.map(item => `<div class="matching-item" data-q-container="${item.qNum}"><span><b>${item.qNum}.</b> ${item.text}</span><select class="themed-select" data-q-num="${item.qNum}"><option value="">Select...</option>${block.features.map((f, i) => `<option value="${String.fromCharCode(65 + i)}">${f}</option>`).join('')}</select></div>`).join('')}`,
-                summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
-                matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
             };
-            
+
             const mainApp = (examData) => {
                 let userAnswers = {};
                 let timerInterval;
-                let isResizing = false;
-                let dragged = null;
-                let questionDataMap = new Map();
-
-                const passageContentEl = document.getElementById('passage-content');
-                const questionsContentEl = document.getElementById('questions-content');
-                const navigationPaneEl = document.getElementById('navigation-pane');
-                const passagePanelEl = document.getElementById('passage-panel');
-                const questionsPanelEl = document.getElementById('questions-panel');
-                const passageSelectEl = document.getElementById('passage-select');
-                const resizerEl = document.getElementById('resizer');
-                const resultModalEl = document.getElementById('result-modal');
-                const modalScoreEl = document.getElementById('modal-score');
-
-                const updateAnswer = (qNum, value) => {
-                    const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
-                    if (value && String(value).trim() !== "") { userAnswers[qNum] = value; navItem?.classList.add('answered'); } 
-                    else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
-                };
-
+                
                 const submitTest = async () => {
                     clearInterval(timerInterval);
                     let score = 0;
@@ -245,104 +158,47 @@
                         if (isCorrect) score++;
                     });
 
-                    modalScoreEl.textContent = `${score} / ${questionDataMap.size}`;
-                    resultModalEl.classList.add('show');
+                    document.getElementById('result-modal').innerHTML = `<div class="modal-content glass-effect"><h2>Hoàn thành!</h2><p>Điểm số của bạn:</p><p id="modal-score" style="font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0;">${score} / ${questionDataMap.size}</p><button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button></div>`;
+                    document.getElementById('result-modal').classList.add('show');
 
                     if (currentUser && currentTestId && enteredCode) {
-                        db.collection("results").add({
-                            studentUid: currentUser.uid, studentEmail: currentUser.email,
-                            studentName: currentUser.displayName || "", testId: currentTestId,
-                            codeUsed: enteredCode, answers: userAnswers, score: score,
-                            totalQuestions: questionDataMap.size,
-                            submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        try {
-                            await fetch(WEB_APP_URL, {
-                                method: 'POST', mode: 'no-cors',
-                                body: JSON.stringify({
-                                    action: "UPDATE_SCORE", code: enteredCode, score: score,
-                                    totalQuestions: questionDataMap.size,
-                                    studentEmail: currentUser.email,
-                                    studentName: currentUser.displayName || ""
-                                })
-                            });
-                        } catch (error) {
-                            console.error("Lỗi khi gửi điểm đến Google Sheet:", error);
-                        }
+                        db.collection("results").add({ studentUid: currentUser.uid, studentEmail: currentUser.email, studentName: currentUser.displayName || "", testId: currentTestId, codeUsed: enteredCode, answers: userAnswers, score: score, totalQuestions: questionDataMap.size, submittedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        
+                        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "UPDATE_SCORE", code: enteredCode, score: score, totalQuestions: questionDataMap.size, studentEmail: currentUser.email, studentName: currentUser.displayName || "" }) }).catch(err => console.error("Lỗi gửi điểm đến Sheet:", err));
                     }
                 };
 
-                const showReview = () => {
-                    resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
-                    document.getElementById('submit-btn').style.display = 'none';
-                    document.getElementById('review-btn').style.display = 'block';
-                    document.querySelectorAll('input, select').forEach(el => el.disabled = true);
-                };
-
-                const showPassageAndQuestions = (passageNum, isInitialLoad = false) => {
-                    document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
-                    document.getElementById(`passage-container-${passageNum}`).style.display = 'block';
-                    document.querySelectorAll(`.question-block[data-passage="${passageNum}"]`).forEach(q => q.style.display = 'block');
-                    document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('hidden', item.dataset.passageNum !== String(passageNum)));
-                    if (isInitialLoad) { passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0; }
-                };
-
-                const handleMouseMove = (e) => { if (!isResizing) return; const newLeftWidth = e.clientX - examContainerEl.offsetLeft; if (newLeftWidth > 200 && (examContainerEl.offsetWidth - newLeftWidth) > 200) { passagePanelEl.style.width = `${newLeftWidth}px`; } };
-                const stopResizing = () => { isResizing = false; document.removeEventListener('mouseup', stopResizing); document.removeEventListener('mousemove', handleMouseMove); };
-
-                const initializeListeners = () => {
-                    questionsContentEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
-                    questionsContentEl.addEventListener('change', e => {
-                        const target = e.target;
-                        const qNum = target.name?.replace('q', '') || target.dataset.qNum;
-                        if (target.matches('input[type="radio"]')) {
-                            if (target.closest('.tfn-options')) {
-                                target.closest('.tfn-options').querySelectorAll('.tfn-label').forEach(l => l.classList.remove('selected'));
-                                target.parentElement.classList.add('selected');
-                            }
-                            updateAnswer(qNum, target.value);
-                        } else if (target.matches('select')) { updateAnswer(qNum, target.value); }
+                const initializeExam = () => {
+                    examContainerEl.innerHTML = `<div class="unified-panel"><header class="exam-header glass-effect"><div class="header-left"><span>IELTS</span></div><div class="header-center" id="exam-title">Reading Test</div><div class="header-right"><div id="timer">60:00</div></div></header><main class="main-content"><div class="panel passage-panel" id="passage-panel"></div><div id="resizer"></div><div class="panel questions-panel" id="questions-panel"></div></main><footer class="exam-footer glass-effect"><div class="navigation-controls"><div id="navigation-pane" class="navigation-pane"></div><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div></footer></div>`;
+                    
+                    const questionDataMap = new Map();
+                    document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
+                    let navHtml = '';
+                    examData.questionBlocks.forEach(block => {
+                        const passageNum = block.passage;
+                        (block.items || Object.keys(block.answers || {})).forEach(item => {
+                            const qNum = item.qNum || item;
+                            navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
+                            questionDataMap.set(String(qNum), { answer: item.answer || block.answers[qNum], type: block.type });
+                        });
                     });
                     
-                    document.getElementById('passage-select').addEventListener('change', e => showPassageAndQuestions(e.target.value));
-                    document.getElementById('submit-btn').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.add('show'));
-                    document.getElementById('close-modal-btn').addEventListener('click', showReview);
-                    document.getElementById('confirm-submit-yes').addEventListener('click', () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); });
-                    document.getElementById('confirm-submit-no').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.remove('show'));
-                    document.getElementById('review-btn').addEventListener('click', () => window.location.reload());
-                    document.getElementById('resizer').addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
+                    document.getElementById('navigation-pane').innerHTML = navHtml;
+                    document.getElementById('passage-panel').innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
+                    document.getElementById('questions-panel').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
+                    
+                    loadingOverlayEl.style.display = 'none';
+                    examContainerEl.style.display = 'flex';
+                    
+                    let time = examData.timeLimitMinutes * 60;
+                    const timerEl = document.getElementById('timer');
+                    timerInterval = setInterval(() => {
+                        if (--time < 0) { clearInterval(timerInterval); submitTest(); return; }
+                        if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+                    }, 1000);
                 };
 
-                document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
-                let navHtml = '';
-                examData.questionBlocks.forEach(block => {
-                    const passageNum = block.passage;
-                    const processItem = item => {
-                        navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
-                        questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
-                    };
-                    if (block.items) { block.items.forEach(processItem); } 
-                    else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
-                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
-                        questionDataMap.set(qNum, { answer, type: block.type });
-                    });}
-                });
-                
-                navigationPaneEl.innerHTML = navHtml;
-                passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
-                questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
-                
-                initializeListeners();
-                showPassageAndQuestions(1, true);
-                loadingOverlayEl.style.display = 'none';
-                examContainerEl.style.display = 'flex';
-                
-                let time = examData.timeLimitMinutes * 60;
-                const timerEl = document.getElementById('timer');
-                timerInterval = setInterval(() => {
-                    if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
-                    if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
-                }, 1000);
+                initializeExam();
             };
 
             const promptForName = () => {
@@ -353,10 +209,9 @@
                         e.preventDefault();
                         const name = nameInputEl.value.trim();
                         if (name) {
-                            nameModalEl.classList.remove('show');
                             resolve(name);
                         } else {
-                            nameErrorEl.innerText = "Vui lòng nhập họ và tên.";
+                            document.getElementById('name-error').innerText = "Vui lòng nhập họ và tên.";
                         }
                     };
                 });
@@ -394,6 +249,7 @@
                             codeModalEl.classList.remove('show');
                             studentName = await promptForName();
                             currentUser.displayName = studentName;
+                            nameModalEl.classList.remove('show');
                         }
                         
                         const updatedCodes = [...codes];
@@ -409,61 +265,24 @@
                     
                     codeModalEl.classList.remove('show');
                     loadingOverlayEl.innerText = "Đang tải đề thi...";
-                    
-                    // Xây dựng giao diện bài thi sau khi xác thực thành công
-                    examContainerEl.innerHTML = `
-                        <div class="unified-panel">
-                            <header class="exam-header glass-effect">
-                                <div class="header-left"><span>IELTS</span></div>
-                                <div class="header-center" id="exam-title">Reading Test</div>
-                                <div class="header-right"><div id="timer">60:00</div></div>
-                            </header>
-                            <main class="main-content">
-                                <div class="panel passage-panel" id="passage-panel"><div id="passage-content" class="passage-content"></div></div>
-                                <div id="resizer"></div>
-                                <div class="panel questions-panel" id="questions-panel"><div id="questions-content"></div></div>
-                            </main>
-                            <footer class="exam-footer glass-effect">
-                                <div class="navigation-controls">
-                                    <div class="nav-left-group">
-                                        <select id="passage-select" class="themed-select"></select>
-                                        <div id="navigation-pane" class="navigation-pane"></div>
-                                    </div>
-                                    <div class="footer-buttons">
-                                        <button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button>
-                                        <button id="submit-btn" class="btn btn-main-action">Nộp bài</button>
-                                    </div>
-                                </div>
-                            </footer>
-                        </div>`;
-
                     mainApp(testData);
 
                 } catch (error) {
                     loadingOverlayEl.style.display = 'none';
-                    codeErrorEl.innerText = error.message;
                     codeInputs.forEach(input => input.value = '');
                     codeInputs[0].focus();
+                    codeErrorEl.innerText = error.message;
                 }
             };
             
             codeInputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
+                input.addEventListener('input', () => {
                     input.value = input.value.toUpperCase();
                     if (input.value && index < codeInputs.length - 1) { codeInputs[index + 1].focus(); }
                     const code = Array.from(codeInputs).map(i => i.value).join('');
                     if (code.length === 6) { validateAccessCodeAndStartExam(code); }
                 });
                 input.addEventListener('keydown', (e) => { if (e.key === "Backspace" && !input.value && index > 0) { codeInputs[index - 1].focus(); } });
-                input.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    const pasteData = e.clipboardData.getData('text').toUpperCase().slice(0, 6);
-                    if (pasteData.length > 0) {
-                        codeInputs.forEach((box, i) => box.value = pasteData[i] || '');
-                        codeInputs[Math.min(pasteData.length, 5)].focus();
-                        if (pasteData.length === 6) { validateAccessCodeAndStartExam(pasteData); }
-                    }
-                });
             });
 
             auth.onAuthStateChanged(user => {
@@ -480,7 +299,6 @@
                         codeInputs[0].focus();
                     } else {
                         loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
-                        loadingOverlayEl.style.display = 'flex';
                     }
                 } else {
                     isAuthCheckComplete = true;
