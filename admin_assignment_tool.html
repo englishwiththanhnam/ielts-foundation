@@ -2,24 +2,22 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Công cụ Giao Bài Tập</title>
+    <title>Công cụ Giao Bài Tập v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style> 
         body { font-family: 'Be Vietnam Pro', sans-serif; } 
-        .module-row { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         fieldset:disabled { opacity: 0.5; }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
-        <h1 class="text-3xl font-bold text-indigo-600 mb-2">Công cụ Giao Bài Tập</h1>
-        <p class="text-gray-600 mb-8">Tạo và gán bài tập về nhà cho các lớp học.</p>
+        <h1 class="text-3xl font-bold text-indigo-600 mb-2">Công cụ Giao Bài Tập v2.0</h1>
+        <p class="text-gray-600 mb-8">Giao bài tập từ giáo trình gốc và các học phần bổ sung.</p>
 
         <div class="space-y-6">
             <div>
-                <label for="firebaseConfig" class="block text-sm font-medium text-gray-700 mb-1">1. Dán Firebase Config:</label>
+                <label for="firebaseConfig" class="block text-sm font-medium text-gray-700 mb-1">1. Dán Firebase Config và Kết nối:</label>
                 <textarea id="firebaseConfig" rows="4" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="const firebaseConfig = {...};"></textarea>
                 <button id="connect-btn" class="mt-2 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-all">
                     Kết nối & Tải dữ liệu
@@ -42,24 +40,30 @@
                 </div>
 
                 <div class="border-t pt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">3. Các học phần</h2>
-                        <button id="add-module-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold">
-                            + Thêm học phần
-                        </button>
-                    </div>
-                    <div id="modules-container" class="space-y-4">
-                        <!-- Các học phần sẽ được thêm vào đây -->
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">3. Chọn Học Phần Để Giao</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 id="core-modules-title" class="font-bold text-gray-700 mb-2">Học phần trong Giáo trình</h3>
+                            <div id="core-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                <p class="text-gray-500">Vui lòng chọn một lớp học để xem các học phần.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-700 mb-2">Học phần Bổ sung</h3>
+                            <div id="supplementary-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                <!-- Học phần bổ sung sẽ được tải vào đây -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <button id="create-assignment-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
+                <button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
                     Tạo Bài Tập
                 </button>
             </fieldset>
 
             <div id="status" class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm">
-                Trạng thái: Chưa kết nối. Vui lòng dán Firebase Config và nhấn nút kết nối.
+                Trạng thái: Chưa kết nối.
             </div>
         </div>
     </div>
@@ -68,8 +72,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
         let db;
-        let tests = [];
-        let vocabSets = [];
+        let classes = [];
+        let supplementaryModules = [];
 
         function initializeFirebase() {
             if (db) return true;
@@ -79,7 +83,7 @@
                 const firebaseConfig = new Function(`${configText} return firebaseConfig;`)();
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
-                document.getElementById('status').innerText = 'Trạng thái: Đã kết nối Firebase. Sẵn sàng.';
+                document.getElementById('status').innerText = 'Trạng thái: Đã kết nối Firebase.';
                 return true;
             } catch (error) {
                 alert("Lỗi cú pháp trong Firebase Config."); console.error(error); return false;
@@ -88,92 +92,78 @@
 
         async function loadInitialData() {
             const statusEl = document.getElementById('status');
-            statusEl.innerHTML += '<br>Đang tải danh sách lớp học, bài thi và bộ từ vựng...';
+            statusEl.innerHTML += '<br>Đang tải dữ liệu ban đầu...';
 
-            // Tải song song
-            const [classesSnap, testsSnap, vocabSetsSnap] = await Promise.all([
+            const [classesSnap, supplementarySnap] = await Promise.all([
                 db.collection("classes").get(),
-                db.collection("tests").get(),
-                db.collection("vocab_sets").get()
+                db.collection("supplementary_modules").get()
             ]);
 
-            // Xử lý Lớp học
+            classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            supplementaryModules = supplementarySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
             const classSelector = document.getElementById('class-selector');
             classSelector.innerHTML = '<option value="">-- Chọn một lớp --</option>';
-            classesSnap.forEach(doc => {
+            classes.forEach(c => {
                 const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = doc.data().className || doc.id;
+                option.value = c.id;
+                option.textContent = c.className || c.id;
                 classSelector.appendChild(option);
             });
 
-            // Lưu dữ liệu bài thi và từ vựng
-            tests = testsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            vocabSets = vocabSetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const supplementaryContainer = document.getElementById('supplementary-modules-container');
+            supplementaryContainer.innerHTML = supplementaryModules.map(m => `
+                <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                    <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${m.id}" data-type="supplementary">
+                    <span class="ml-3 text-sm text-gray-800">${m.title}</span>
+                </label>
+            `).join('');
             
-            statusEl.innerHTML += `<br>✅ Tải xong: ${classesSnap.size} lớp, ${tests.length} bài thi, ${vocabSets.length} bộ từ vựng.`;
+            statusEl.innerHTML += `<br>✅ Tải xong: ${classes.length} lớp, ${supplementaryModules.length} học phần bổ sung.`;
         }
         
-        function createModuleRow() {
-            const container = document.getElementById('modules-container');
-            const newRow = document.createElement('div');
-            newRow.className = 'module-row grid grid-cols-1 md:grid-cols-10 gap-4 items-center bg-gray-50 p-3 rounded-lg';
+        document.getElementById('class-selector').addEventListener('change', async (e) => {
+            const classId = e.target.value;
+            const coreContainer = document.getElementById('core-modules-container');
+            const coreTitle = document.getElementById('core-modules-title');
             
-            newRow.innerHTML = `
-                <div class="md:col-span-3">
-                    <select class="module-type w-full p-2 border border-gray-300 rounded-md">
-                        <option value="">-- Chọn loại học phần --</option>
-                        <option value="test">Bài Kiểm Tra</option>
-                        <option value="vocab">Ôn Từ Vựng</option>
-                    </select>
-                </div>
-                <div class="md:col-span-6">
-                    <select class="module-id w-full p-2 border border-gray-300 rounded-md" disabled>
-                        <option>-- Chọn nội dung --</option>
-                    </select>
-                </div>
-                <div class="md:col-span-1 text-right">
-                    <button class="remove-module-btn bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                        &times;
-                    </button>
-                </div>
-            `;
-            container.appendChild(newRow);
-        }
+            if (!classId) {
+                coreTitle.textContent = 'Học phần trong Giáo trình';
+                coreContainer.innerHTML = '<p class="text-gray-500">Vui lòng chọn một lớp học.</p>';
+                return;
+            }
 
-        document.getElementById('modules-container').addEventListener('change', (e) => {
-            if (e.target.classList.contains('module-type')) {
-                const type = e.target.value;
-                const idSelector = e.target.closest('.module-row').querySelector('.module-id');
-                idSelector.innerHTML = '<option value="">-- Chọn nội dung --</option>';
-                idSelector.disabled = true;
+            coreContainer.innerHTML = '<p>Đang tải học phần của lớp...</p>';
+            const selectedClass = classes.find(c => c.id === classId);
+            if (!selectedClass || !selectedClass.curriculumId) {
+                coreTitle.textContent = 'Học phần trong Giáo trình';
+                coreContainer.innerHTML = '<p class="text-gray-500">Lớp này chưa được gán giáo trình.</p>';
+                return;
+            }
 
-                let options = [];
-                if (type === 'test') {
-                    options = tests;
-                } else if (type === 'vocab') {
-                    options = vocabSets;
+            try {
+                const curriculumDoc = await db.collection('curriculums').doc(selectedClass.curriculumId).get();
+                const curriculumName = curriculumDoc.data()?.name || 'Không rõ';
+                coreTitle.textContent = `Học phần trong Giáo trình: ${curriculumName}`;
+
+                const modulesSnap = await db.collection('curriculums').doc(selectedClass.curriculumId).collection('modules').get();
+                if (modulesSnap.empty) {
+                    coreContainer.innerHTML = '<p class="text-gray-500">Giáo trình này chưa có học phần nào.</p>';
+                    return;
                 }
-
-                if (options.length > 0) {
-                    options.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.id;
-                        option.textContent = item.title || item.id;
-                        idSelector.appendChild(option);
-                    });
-                    idSelector.disabled = false;
-                }
+                
+                coreContainer.innerHTML = modulesSnap.docs.map(doc => {
+                    const module = doc.data();
+                    return `<label class="flex items-center p-2 rounded hover:bg-gray-100">
+                                <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${doc.id}" data-type="core">
+                                <span class="ml-3 text-sm text-gray-800">${module.title}</span>
+                            </label>`;
+                }).join('');
+            } catch (error) {
+                console.error("Lỗi tải học phần của giáo trình:", error);
+                coreContainer.innerHTML = `<p class="text-red-500">Lỗi: ${error.message}</p>`;
             }
         });
-        
-        document.getElementById('modules-container').addEventListener('click', (e) => {
-            if (e.target.closest('.remove-module-btn')) {
-                e.target.closest('.module-row').remove();
-            }
-        });
-
-        document.getElementById('add-module-btn').addEventListener('click', createModuleRow);
 
         document.getElementById('create-assignment-btn').addEventListener('click', async () => {
             if (!db) {
@@ -190,34 +180,33 @@
                 return;
             }
 
-            const modules = [];
-            const moduleRows = document.querySelectorAll('.module-row');
-            if (moduleRows.length === 0) {
-                alert("Vui lòng thêm ít nhất một học phần.");
+            const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert("Vui lòng chọn ít nhất một học phần để giao.");
                 return;
             }
 
-            for (const row of moduleRows) {
-                const type = row.querySelector('.module-type').value;
-                const id = row.querySelector('.module-id').value;
-                if (!type || !id) {
-                    alert("Vui lòng điền đầy đủ thông tin cho tất cả các học phần.");
-                    return;
+            const modules = [];
+            for (const checkbox of selectedCheckboxes) {
+                const moduleId = checkbox.value;
+                const moduleType = checkbox.dataset.type;
+                let moduleData, url;
+
+                if (moduleType === 'core') {
+                    const selectedClass = classes.find(c => c.id === classId);
+                    const docSnap = await db.collection('curriculums').doc(selectedClass.curriculumId).collection('modules').doc(moduleId).get();
+                    moduleData = docSnap.data();
+                    url = moduleData.type === 'vocab' ? `vocab_app.html?vocabId=${moduleId}` : `reading_test.html?testId=${moduleId}`;
+                } else { // supplementary
+                    moduleData = supplementaryModules.find(m => m.id === moduleId);
+                    url = moduleData.type === 'vocab' ? `vocab_app.html?vocabId=${moduleId}` : `reading_test.html?testId=${moduleId}`;
                 }
                 
-                let moduleTitle = '';
-                let url = '';
-                if (type === 'test') {
-                    const selectedTest = tests.find(t => t.id === id);
-                    moduleTitle = selectedTest.title || id;
-                    url = `reading_test.html?testId=${id}`;
-                } else if (type === 'vocab') {
-                    const selectedVocab = vocabSets.find(v => v.id === id);
-                    moduleTitle = selectedVocab.title || id;
-                    url = `vocab_app.html?vocabId=${id}`;
-                }
-
-                modules.push({ type, title: moduleTitle, url });
+                modules.push({
+                    title: moduleData.title,
+                    type: moduleData.type,
+                    url: url
+                });
             }
 
             const assignmentData = {
@@ -228,7 +217,7 @@
             };
 
             try {
-                statusEl.textContent = `Đang tạo bài tập "${title}" cho lớp ${classId}...`;
+                statusEl.textContent = `Đang tạo bài tập "${title}"...`;
                 const docRef = await db.collection("assignments").add(assignmentData);
                 statusEl.innerHTML += `<br>🎉 **THÀNH CÔNG!** Đã tạo bài tập với ID: ${docRef.id}`;
                 alert('Tạo bài tập thành công!');
@@ -238,10 +227,8 @@
             }
         });
         
-        // [THAY ĐỔI] Gắn sự kiện vào nút bấm thay vì window.onload
         document.getElementById('connect-btn').addEventListener('click', async (event) => {
             const connectButton = event.target;
-            const statusEl = document.getElementById('status');
             const form = document.getElementById('assignment-form');
 
             connectButton.disabled = true;
@@ -249,13 +236,12 @@
 
             if (initializeFirebase()) {
                 await loadInitialData();
-                form.disabled = false; // Mở khóa form
-                statusEl.innerHTML += '<br>✅ Sẵn sàng để tạo bài tập.';
+                form.disabled = false;
                 connectButton.textContent = 'Đã kết nối & Tải xong!';
                 connectButton.classList.remove('bg-green-600', 'hover:bg-green-700');
                 connectButton.classList.add('bg-gray-400');
             } else {
-                statusEl.textContent = 'Kết nối thất bại. Vui lòng kiểm tra lại Firebase Config.';
+                document.getElementById('status').textContent = 'Kết nối thất bại.';
                 connectButton.disabled = false;
                 connectButton.textContent = 'Thử lại';
             }
