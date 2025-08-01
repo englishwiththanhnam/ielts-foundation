@@ -145,50 +145,130 @@ const firebaseConfig = {
             });
         });
 
-        // --- MODULE: DASHBOARD ---
         async function renderDashboard() {
             pageTitle.textContent = 'Dashboard';
             mainContent.innerHTML = `<p>Đang tải thống kê...</p>`;
             
-            const [usersSnap, classesSnap, assignmentsSnap] = await Promise.all([
-                db.collection('users').where('role', '==', 'student').get(),
-                db.collection('classes').get(),
-                db.collection('assignments').get()
-            ]);
+            try {
+                // [FIX] Tải tất cả user và lọc ở client
+                const [usersSnap, classesSnap, assignmentsSnap] = await Promise.all([
+                    db.collection('users').get(),
+                    db.collection('classes').get(),
+                    db.collection('assignments').get()
+                ]);
 
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-700">Tổng số học sinh</h3>
-                        <p class="text-3xl font-bold text-indigo-600 mt-2">${usersSnap.size}</p>
+                const studentCount = usersSnap.docs.filter(doc => doc.data().role === 'student').length;
+
+                mainContent.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số học sinh</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${studentCount}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số lớp học</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${classesSnap.size}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700">Tổng số bài tập</h3>
+                            <p class="text-3xl font-bold text-indigo-600 mt-2">${assignmentsSnap.size}</p>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-700">Tổng số lớp học</h3>
-                        <p class="text-3xl font-bold text-indigo-600 mt-2">${classesSnap.size}</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-700">Tổng số bài tập</h3>
-                        <p class="text-3xl font-bold text-indigo-600 mt-2">${assignmentsSnap.size}</p>
-                    </div>
-                </div>
-            `;
+                `;
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải thống kê.</p>`;
+                console.error(error);
+            }
         }
 
-        // --- MODULE: CLASS MANAGEMENT ---
         async function renderClassManagement() {
             pageTitle.textContent = 'Quản Lý Lớp Học';
             mainContent.innerHTML = `<p>Đang tải danh sách lớp học...</p>`;
-            // ... (code của Quản lý lớp học từ trước)
+             try {
+                const snapshot = await db.collection('classes').get();
+                let classHtml = `
+                    <div class="mb-6">
+                        <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="p-2 border rounded-md">
+                        <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp Mới</button>
+                    </div>
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-800 text-white">
+                                <tr>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">ID Lớp</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">`;
+                
+                snapshot.forEach(doc => {
+                    const classData = doc.data();
+                    classHtml += `
+                        <tr>
+                            <td class="w-1/3 text-left py-3 px-4">${classData.className}</td>
+                            <td class="w-1/3 text-left py-3 px-4">${doc.id}</td>
+                            <td class="text-left py-3 px-4">
+                                <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                classHtml += `</tbody></table></div>`;
+                mainContent.innerHTML = classHtml;
+
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học.</p>`;
+                console.error(error);
+            }
         }
 
-        // --- MODULE: STUDENT MANAGEMENT ---
         async function renderStudentManagement() {
             pageTitle.textContent = 'Quản Lý Học Sinh';
             mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
-            // ... (code của Quản lý học sinh từ trước)
+
+            try {
+                const snapshot = await db.collection('users').get();
+                let studentHtml = `
+                    <div class="mb-6">
+                        <button id="show-add-student-modal-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Tài Khoản Học Sinh</button>
+                    </div>
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-800 text-white">
+                                <tr>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Họ và Tên</th>
+                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Email</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">`;
+                
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    if (user.role === 'student') {
+                        studentHtml += `
+                            <tr>
+                                <td class="w-1/3 text-left py-3 px-4">${user.displayName}</td>
+                                <td class="w-1/3 text-left py-3 px-4">${user.email}</td>
+                                <td class="text-left py-3 px-4">
+                                    <button class="text-red-500 hover:text-red-700 delete-student-btn" data-id="${doc.id}">Xóa</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                studentHtml += `</tbody></table></div>`;
+                mainContent.innerHTML = studentHtml;
+
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách học sinh.</p>`;
+                console.error(error);
+            }
         }
 
-        // --- MODULE: CONTENT MANAGEMENT ---
         function renderContentManagement() {
             pageTitle.textContent = 'Quản Lý Nội Dung';
             mainContent.innerHTML = `
@@ -206,7 +286,6 @@ const firebaseConfig = {
             `;
         }
 
-        // --- MODULE: ASSIGNMENT MANAGEMENT ---
         function renderAssignmentManagement() {
             pageTitle.textContent = 'Quản Lý Bài Tập';
             mainContent.innerHTML = `
@@ -215,17 +294,42 @@ const firebaseConfig = {
                         <h3 class="text-xl font-bold text-purple-600">Giao Bài Tập Mới</h3>
                         <p class="mt-2 text-gray-600">Tạo bài tập về nhà mới và giao cho các lớp học.</p>
                     </a>
-                    <!-- Vùng hiển thị danh sách bài tập đã giao sẽ được xây dựng ở đây -->
                 </div>
             `;
         }
         
-        // --- EVENT LISTENERS FOR MODALS AND DYNAMIC CONTENT ---
         mainContent.addEventListener('click', async (e) => {
             if (e.target.id === 'show-add-student-modal-btn') {
                 addStudentModal.classList.add('is-open');
             }
-            // ... (các event listener khác)
+            if (e.target.id === 'add-class-btn') {
+                 const newClassName = document.getElementById('new-class-name').value;
+                if (newClassName.trim() === '') {
+                    alert('Vui lòng nhập tên lớp.');
+                    return;
+                }
+                try {
+                    await db.collection('classes').add({ className: newClassName });
+                    alert('Tạo lớp thành công!');
+                    renderClassManagement();
+                } catch (error) {
+                    alert('Đã có lỗi xảy ra.');
+                    console.error(error);
+                }
+            }
+            if (e.target.classList.contains('delete-class-btn')) {
+                const classId = e.target.dataset.id;
+                if (confirm(`Bạn có chắc chắn muốn xóa lớp học này không?`)) {
+                    try {
+                        await db.collection('classes').doc(classId).delete();
+                        alert('Xóa lớp thành công!');
+                        renderClassManagement();
+                    } catch (error) {
+                        alert('Đã có lỗi xảy ra.');
+                        console.error(error);
+                    }
+                }
+            }
         });
 
         document.getElementById('cancel-add-student').addEventListener('click', () => {
