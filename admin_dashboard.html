@@ -98,6 +98,10 @@ const firebaseConfig = {
                         auth.signOut();
                         window.location.href = 'login.html';
                     }
+                }).catch(err => {
+                    console.error("Error checking user role:", err);
+                    alert("Đã xảy ra lỗi khi xác thực. Vui lòng thử lại.");
+                    window.location.href = 'login.html';
                 });
             } else {
                 window.location.href = 'login.html';
@@ -123,6 +127,7 @@ const firebaseConfig = {
             });
         });
 
+        // --- RENDER FUNCTIONS ---
         async function renderDashboard() {
             pageTitle.textContent = 'Dashboard';
             mainContent.innerHTML = `<p>Đang tải thống kê...</p>`;
@@ -401,7 +406,7 @@ const firebaseConfig = {
         }
         
         // --- EVENT LISTENERS ---
-         let draggedItem = null;
+        let draggedItem = null;
         mainContent.addEventListener('click', async (e) => {
             if (e.target.id === 'add-class-btn') {
                 const newClassName = document.getElementById('new-class-name').value;
@@ -430,7 +435,7 @@ const firebaseConfig = {
                 document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 if (e.target.id === 'tab-curriculums') await renderCurriculumTab();
-                if (e.target.id === 'tab-supplementary') await renderSupplementaryTab();
+                if (e.target.id === 'tab-vocab-tool') await renderVocabToolHtml();
             }
             if (e.target.id === 'add-curriculum-btn') {
                 const name = document.getElementById('new-curriculum-name').value;
@@ -496,7 +501,6 @@ const firebaseConfig = {
                 }
             }
         });
-
         
     </script>
 </body>
