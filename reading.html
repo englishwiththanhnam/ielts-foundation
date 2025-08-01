@@ -26,7 +26,6 @@
             --incorrect-text: #b91c1c;
             --transition-fast: all 0.2s ease-out;
             --transition-medium: all 0.3s ease-out;
-            --fade-duration: 150ms;
         }
         body.dark {
             --panel-bg-color: rgba(30, 41, 59, 1);
@@ -77,23 +76,30 @@
         .header-center { font-weight: 600; font-size: 1.25rem; color: var(--text-secondary); }
         .header-right { display: flex; align-items: center; gap: 20px; }
         #timer { background-color: #dc3545; color: white; padding: 8px 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); }
-        .settings-icon { width: 24px; height: 24px; cursor: pointer; fill: var(--text-primary); transition: var(--transition-fast); }
-        .settings-icon:hover { fill: var(--primary-accent); }
-        .settings-dropdown {
-            position: absolute; top: 60px; right: 20px; z-index: 1002;
-            padding: 10px; border-radius: 12px; background: var(--panel-bg-color);
-            border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color);
-            opacity: 0; transform: translateY(-10px); pointer-events: none;
-            transition: opacity var(--transition-fast), transform var(--transition-fast);
-        }
-        .settings-dropdown.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .settings-group { margin-bottom: 10px; }
-        .settings-group label { font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-primary); }
-        .main-content { display: flex; flex-grow: 1; overflow: hidden; background: var(--panel-bg-color); position: relative; }
-        .panel { padding: 24px; overflow-y: auto; height: 100%; box-sizing: border-box; position: relative; z-index: 1; transition: opacity var(--fade-duration) ease-in-out; }
-        .panel.fading { opacity: 0; }
-        .passage-panel { width: 50%; }
-        .questions-panel { width: 50%; }
+        .btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
+        .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
+        .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
+        
+        /* CSS CHO MODAL */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .modal.show { display: flex; opacity: 1; transform: scale(1); pointer-events: auto; }
+        .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; transition: transform 0.3s ease; transform: translateY(10px); }
+        .modal.show .modal-content { transform: translateY(0); }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
+        body.dark #loading-overlay { background: rgba(15, 23, 42, 0.8); }
+
+        /* CSS CHO CỬA SỔ NHẬP MÃ & TÊN */
+        .input-modal .modal-content { max-width: 420px; padding: 32px; }
+        .input-modal h2 { font-size: 1.75rem; color: var(--text-primary); margin-bottom: 8px; }
+        .input-modal p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 24px; }
+        #code-inputs { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; }
+        .code-input, #name-input { width: 100%; height: 60px; font-size: 1.5rem; text-align: center; border: 2px solid var(--glass-border-color); border-radius: 12px; background-color: rgba(0,0,0,0.05); color: var(--text-primary); outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: var(--primary-accent); padding: 0 10px; box-sizing: border-box; }
+        .code-input { width: 50px; font-size: 2rem; }
+        .code-input:focus, #name-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3); }
+        .input-error { color: #ef4444; font-weight: 600; height: 20px; transition: opacity 0.2s; }
+        #name-modal-form { margin-bottom: 24px; }
+
+        /* PHẦN CSS CÒN LẠI */
         .passage-header { margin-bottom: 2rem; }
         .passage-number { text-transform: uppercase; font-weight: 600; color: var(--text-secondary); font-size: 0.9em; margin-bottom: 1rem; }
         .passage-instruction { color: var(--text-primary); margin-bottom: 2rem; font-size: 1em; }
@@ -101,112 +107,77 @@
         .passage-subtitle { font-style: italic; font-size: 1.1em; color: var(--text-secondary); margin-bottom: 2rem; }
         .passage-content p { line-height: 1.7; text-align: justify; color: var(--text-primary) !important; margin-bottom: 1em; }
         #resizer { width: 8px; cursor: col-resize; background: transparent; flex-shrink: 0; border-radius: 4px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        #resizer::before { content: ''; width: 2px; height: 50px; background-color: var(--glass-border-color); border-radius: 1px; transition: var(--transition-fast); }
+        #resizer::before { content: ''; width: 2px; height: 50px; background-color: var(--glass-border-color); border-radius: 1px; transition: all 0.2s ease; }
         #resizer:hover::before { background-color: var(--primary-accent); transform: scaleX(2); }
         .exam-footer { padding: 12px 24px; display: flex; align-items: center; flex-shrink: 0; border-top: 1px solid var(--glass-border-color); }
         .navigation-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem; }
         .nav-left-group { display: flex; align-items: center; gap: 1rem; flex-grow: 1; overflow: hidden; }
         .navigation-pane { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; -ms-overflow-style: none; scrollbar-width: none; }
         .navigation-pane::-webkit-scrollbar { display: none; }
-        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; transition: var(--transition-medium); flex-shrink: 0; font-weight: 600; color: var(--text-secondary); }
-        .nav-item.hidden { display: none; }
+        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; font-weight: 600; color: var(--text-secondary); }
         .nav-item:hover { background-color: rgba(109, 40, 217, 0.1); transform: translateY(-2px); }
         .nav-item.answered { background-color: var(--primary-accent); color: white; border-color: transparent; }
         body.dark .nav-item.answered { color: #1e293b; }
         .nav-item.current { border-color: var(--primary-accent); border-width: 2px; color: var(--text-primary); transform: scale(1.1); box-shadow: 0 0 10px rgba(109, 40, 217, 0.3); }
         .footer-buttons { flex-shrink: 0; }
-        .btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: var(--transition-medium); display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
-        .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
-        .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
-        .btn-secondary { background: rgba(0, 0, 0, 0.05); color: var(--text-primary); }
-        .themed-select { padding: 8px 12px; border: 1px solid var(--glass-border-color); background-color: rgba(0,0,0,0.02); cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-secondary); -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 1em; padding-right: 2rem; flex-shrink: 0; transition: var(--transition-fast); }
-        .themed-select:hover { border-color: var(--primary-accent); }
         .question-block { margin-bottom: 2.2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border-color); }
         .question-range-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; }
         .question-instruction { font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); line-height: 1.6; }
-        .question-text { margin-bottom: 10px; color: var(--text-secondary); line-height: 1.6; }
-        .mc-option { display: flex; align-items: center; gap: 10px; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid transparent; transition: var(--transition-fast); }
-        .mc-option:hover { background-color: rgba(109, 40, 217, 0.05); }
-        .tfn-options { display: flex; gap: 15px; margin-top: 10px; }
-        .tfn-label { padding: 10px 18px; border: 1px solid var(--glass-border-color); border-radius: 10px; cursor: pointer; font-weight: 600; transition: var(--transition-medium); color: var(--text-primary); }
-        .tfn-label input { display: none; }
-        .tfn-label:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .tfn-label.selected { background-color: var(--primary-accent); color: white; border-color: var(--primary-accent); transform: translateY(-2px) scale(1.05); }
-        .completion-input { border: none; border-bottom: 2px solid var(--primary-accent); background: transparent; padding: 4px 8px; font-size: 1em; width: 150px; text-align: center; color: var(--text-primary); transition: var(--transition-fast); }
-        .completion-input:focus { outline: none; background-color: rgba(109, 40, 217, 0.1); }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
-        .modal.show { display: flex; opacity: 1; transform: scale(1); pointer-events: auto; }
-        .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; transition: transform 0.3s ease; transform: translateY(10px); }
-        .modal.show .modal-content { transform: translateY(0); }
-        .modal-score { font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0; }
-        .review-mode .correct { background-color: var(--correct-bg) !important; border-color: var(--correct-border) !important; }
-        .review-mode .correct, .review-mode .correct-answer-text { color: var(--correct-text) !important; }
-        .review-mode .incorrect { background-color: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; }
-        .review-mode .incorrect, .review-mode .incorrect-text { color: var(--incorrect-text) !important; }
-        .review-mode .completion-input.incorrect { text-decoration: line-through; }
-        .correct-answer-text { font-weight: 600; margin-left: 10px; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
-        body.dark #loading-overlay { background: rgba(15, 23, 42, 0.8); }
-        #code-modal .modal-content { max-width: 420px; padding: 32px; }
-        #code-modal h2 { font-size: 1.75rem; color: var(--text-primary); margin-bottom: 8px; }
-        #code-modal p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 24px; }
-        #code-inputs { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; }
-        .code-input { width: 50px; height: 60px; font-size: 2rem; text-align: center; border: 2px solid var(--glass-border-color); border-radius: 12px; background-color: rgba(0,0,0,0.05); color: var(--text-primary); outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: var(--primary-accent); }
-        .code-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3); }
-        #code-error { color: #ef4444; font-weight: 600; height: 20px; transition: opacity 0.2s; }
     </style>
 </head>
 <body>
     <div id="loading-overlay">Đang kết nối...</div>
 
-    <div id="code-modal" class="modal">
+    <div id="code-modal" class="modal input-modal">
         <div class="modal-content glass-effect">
             <h2>Nhập mã làm bài</h2>
             <p>Vui lòng nhập 6 ký tự trong mã được cung cấp để bắt đầu.</p>
             <div id="code-inputs">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
-                <input type="text" class="code-input" maxlength="1" inputmode="text" pattern="[a-zA-Z0-9]*" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" autocomplete="off">
             </div>
-            <p id="code-error"></p>
+            <p id="code-error" class="input-error"></p>
+        </div>
+    </div>
+
+    <div id="name-modal" class="modal input-modal">
+        <div class="modal-content glass-effect">
+            <h2>Xác nhận thông tin</h2>
+            <p>Đây là một mã dự phòng. Vui lòng nhập họ và tên của bạn để tiếp tục.</p>
+            <form id="name-modal-form" style="margin-bottom: 1rem;">
+                <input type="text" id="name-input" placeholder="Nguyễn Văn A" required style="margin-bottom: 1rem;">
+                <button type="submit" id="name-submit-btn" class="btn btn-main-action">Xác nhận</button>
+            </form>
+            <p id="name-error" class="input-error"></p>
         </div>
     </div>
 
     <div class="exam-container" style="display: none;">
-        <div class="unified-panel">
-            <header class="exam-header glass-effect">
-                <div class="header-left"> <span>IELTS</span> </div>
-                <div class="header-center" id="exam-title">Reading Test</div>
-                <div class="header-right">
-                    <div id="timer">60:00</div>
-                    <div id="settings-btn"><svg class="settings-icon" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg></div>
-                </div>
-                <div class="settings-dropdown" id="settings-dropdown">
-                    <div class="settings-group"><label for="text-size">Text Size</label><select id="text-size" class="themed-select"><option value="1">Regular</option><option value="1.2">Large</option><option value="1.4">Extra Large</option></select></div>
-                    <div class="settings-group"><label for="theme-toggle">Theme</label><select id="theme-toggle" class="themed-select"><option value="light">Light</option><option value="dark">Dark</option></select></div>
-                </div>
-            </header>
-            <main class="main-content">
-                <div class="panel passage-panel" id="passage-panel"><div id="passage-content" class="passage-content"></div></div>
-                <div id="resizer"></div>
-                <div class="panel questions-panel" id="questions-panel"><div id="questions-content"></div></div>
-            </main>
-            <footer class="exam-footer glass-effect">
-                <div class="navigation-controls">
-                    <div class="nav-left-group">
-                        <div class="passage-filter"><select id="passage-select" class="themed-select"><option value="1">Passage 1</option><option value="2">Passage 2</option><option value="3">Passage 3</option></select></div>
-                        <div id="navigation-pane" class="navigation-pane"></div>
-                    </div>
-                     <div class="footer-buttons"><button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div>
-                </div>
-            </footer>
+        </div>
+    
+    <div id="result-modal" class="modal">
+        <div class="modal-content glass-effect">
+            <h2>Hoàn thành bài thi!</h2>
+            <p>Điểm số của bạn là:</p>
+            <p id="modal-score" style="font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0;">0 / 40</p>
+            <button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button>
         </div>
     </div>
-    <div id="result-modal" class="modal"><div class="modal-content glass-effect"><h2>Hoàn thành bài thi!</h2><p>Điểm số của bạn là:</p><p id="modal-score" class="modal-score">0 / 40</p><button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button></div></div>
-    <div id="confirm-submit-modal" class="modal"><div class="modal-content glass-effect"><h2>Xác nhận nộp bài</h2><p style="color: var(--text-secondary); margin: 1rem 0;">Bạn có chắc chắn muốn nộp bài không?</p><div style="display: flex; justify-content: center; gap: 1rem;"><button id="confirm-submit-no" class="btn btn-secondary">Không</button><button id="confirm-submit-yes" class="btn btn-main-action">Có, nộp bài</button></div></div></div>
+    <div id="confirm-submit-modal" class="modal">
+        <div class="modal-content glass-effect">
+            <h2>Xác nhận nộp bài</h2>
+            <p style="color: var(--text-secondary); margin: 1rem 0;">Bạn có chắc chắn muốn nộp bài không?</p>
+            <div style="display: flex; justify-content: center; gap: 1rem;">
+                <button id="confirm-submit-no" class="btn btn-secondary">Không</button>
+                <button id="confirm-submit-yes" class="btn btn-main-action">Có, nộp bài</button>
+            </div>
+        </div>
+    </div>
+
     <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -214,7 +185,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-const firebaseConfig = {
+        // !!! THẦY HÃY DÁN "CHÌA KHÓA" firebaseConfig CỦA DỰ ÁN "ielts-foundation-6ea9d" VÀO ĐÂY !!!
+   const firebaseConfig = {
   apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
   authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
   projectId: "ielts-foundation-6ea9d",
@@ -234,317 +206,232 @@ const firebaseConfig = {
         const db = firebase.firestore();
 
         document.addEventListener('DOMContentLoaded', () => {
-            const passageContentEl = document.getElementById('passage-content');
-            const questionsContentEl = document.getElementById('questions-content');
-            const navigationPaneEl = document.getElementById('navigation-pane');
-            const timerEl = document.getElementById('timer');
-            const passagePanelEl = document.getElementById('passage-panel');
-            const questionsPanelEl = document.getElementById('questions-panel');
-            const passageSelectEl = document.getElementById('passage-select');
-            const resizerEl = document.getElementById('resizer');
-            const settingsDropdownEl = document.getElementById('settings-dropdown');
-            const resultModalEl = document.getElementById('result-modal');
-            const modalScoreEl = document.getElementById('modal-score');
             const loadingOverlayEl = document.getElementById('loading-overlay');
             const examContainerEl = document.querySelector('.exam-container');
             const codeModalEl = document.getElementById('code-modal');
             const codeInputs = document.querySelectorAll('.code-input');
             const codeErrorEl = document.getElementById('code-error');
+            const nameModalEl = document.getElementById('name-modal');
+            const nameInputEl = document.getElementById('name-input');
+            const nameSubmitBtn = document.getElementById('name-submit-btn');
+            const nameErrorEl = document.getElementById('name-error');
+            const nameModalForm = document.getElementById('name-modal-form');
             
-            let userAnswers = {};
-            let timerInterval;
-            let isResizing = false;
-            let dragged = null;
-            let questionDataMap = new Map();
             let currentUser = null;
             let currentTestId = null;
             let enteredCode = null;
             let isAuthCheckComplete = false;
 
+            // BỘ QUY TẮC VẼ CÂU HỎI ĐẦY ĐỦ (FIX LỖI MÀN HÌNH TRẮNG)
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
+                multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
                 true_false_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['TRUE', 'FALSE', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
                 yes_no_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['YES', 'NO', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
+                note_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace(/______/g, `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
                 sentence_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace(/______/g, `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
                 custom_html_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.content}`,
+                summary_completion_from_text: block => `<p class="question-instruction">${block.instruction}</p><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span data-q-container="${qNum}"><b>${qNum}.</b> <input type="text" class="completion-input" data-q-num="${qNum}"></span>`)}</p>`,
+                table_completion: block => `<p class="question-instruction">${block.instruction}</p><table class="completion-table"><thead><tr>${block.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => typeof cell === 'object' ? `<td data-q-container="${cell.qNum}"><b>${cell.qNum}.</b> <input type="text" class="completion-input" data-q-num="${cell.qNum}"></td>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
                 matching_features: block => `<p class="question-instruction">${block.instruction}</p><div style="margin-bottom:1rem;line-height:1.5;">${block.features.map((f, i) => `<b>${String.fromCharCode(65+i)}</b>. ${f}`).join('<br>')}</div>${block.items.map(item => `<div class="matching-item" data-q-container="${item.qNum}"><span><b>${item.qNum}.</b> ${item.text}</span><select class="themed-select" data-q-num="${item.qNum}"><option value="">Select...</option>${block.features.map((f, i) => `<option value="${String.fromCharCode(65 + i)}">${f}</option>`).join('')}</select></div>`).join('')}`,
-                summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`
+                summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
+                matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
             };
-            RENDERERS.note_completion = RENDERERS.sentence_completion;
 
-            codeInputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    input.value = input.value.toUpperCase();
-                    if (input.value && index < codeInputs.length - 1) {
-                        codeInputs[index + 1].focus();
-                    }
-                    const code = Array.from(codeInputs).map(i => i.value).join('');
-                    if (code.length === 6) {
-                        validateAccessCodeAndStartExam(code);
-                    }
-                });
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === "Backspace" && !input.value && index > 0) {
-                        codeInputs[index - 1].focus();
-                    }
-                });
-                input.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    const pasteData = e.clipboardData.getData('text').toUpperCase().slice(0, 6);
-                    if (pasteData.length > 0) {
-                        codeInputs.forEach((box, i) => box.value = pasteData[i] || '');
-                        codeInputs[Math.min(pasteData.length, 5)].focus();
-                        if (pasteData.length === 6) {
-                            validateAccessCodeAndStartExam(pasteData);
-                        }
-                    }
-                });
-            });
+            const mainApp = () => {
+                let userAnswers = {};
+                let timerInterval;
+                let isResizing = false;
+                let dragged = null;
+                let questionDataMap = new Map();
 
-            const submitTest = async () => {
-                clearInterval(timerInterval);
-                let score = 0;
-                questionDataMap.forEach((data, qNum) => {
-                    const userAnswer = userAnswers[qNum];
-                    if (userAnswer === undefined) return;
-                    let isCorrect = String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
-                    if (isCorrect) score++;
-                });
+                const updateAnswer = (qNum, value) => {
+                    const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
+                    if (value && String(value).trim() !== "") { userAnswers[qNum] = value; navItem?.classList.add('answered'); } 
+                    else { delete userAnswers[qNum]; navItem?.classList.remove('answered'); }
+                };
 
-                modalScoreEl.textContent = `${score} / ${questionDataMap.size}`;
-                resultModalEl.classList.add('show');
-
-                if (currentUser && currentTestId && enteredCode) {
-                    db.collection("results").add({
-                        studentUid: currentUser.uid,
-                        studentEmail: currentUser.email,
-                        studentName: currentUser.displayName || "",
-                        testId: currentTestId,
-                        codeUsed: enteredCode,
-                        answers: userAnswers,
-                        score: score,
-                        totalQuestions: questionDataMap.size,
-                        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                const submitTest = async () => {
+                    clearInterval(timerInterval);
+                    let score = 0;
+                    questionDataMap.forEach((data, qNum) => {
+                        const userAnswer = userAnswers[qNum];
+                        if (userAnswer === undefined) return;
+                        let isCorrect = String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
+                        if (isCorrect) score++;
                     });
 
-                    try {
-                        await fetch(WEB_APP_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            body: JSON.stringify({
-                                action: "UPDATE_SCORE",
-                                code: enteredCode,
-                                score: score,
-                                totalQuestions: questionDataMap.size,
-                                studentEmail: currentUser.email,
-                                studentName: currentUser.displayName || ""
-                            })
+                    document.getElementById('modal-score').textContent = `${score} / ${questionDataMap.size}`;
+                    document.getElementById('result-modal').classList.add('show');
+
+                    if (currentUser && currentTestId && enteredCode) {
+                        db.collection("results").add({
+                            studentUid: currentUser.uid, studentEmail: currentUser.email,
+                            studentName: currentUser.displayName || "", testId: currentTestId,
+                            codeUsed: enteredCode, answers: userAnswers, score: score,
+                            totalQuestions: questionDataMap.size,
+                            submittedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        console.log("Yêu cầu cập nhật điểm đã được gửi đến Google Sheet.");
-                    } catch (error) {
-                        console.error("Lỗi khi gửi điểm đến Google Sheet:", error);
+
+                        try {
+                            await fetch(WEB_APP_URL, {
+                                method: 'POST', mode: 'no-cors',
+                                body: JSON.stringify({
+                                    action: "UPDATE_SCORE", code: enteredCode, score: score,
+                                    totalQuestions: questionDataMap.size,
+                                    studentEmail: currentUser.email,
+                                    studentName: currentUser.displayName || ""
+                                })
+                            });
+                            console.log("Yêu cầu cập nhật điểm đã được gửi đến Google Sheet.");
+                        } catch (error) {
+                            console.error("Lỗi khi gửi điểm đến Google Sheet:", error);
+                        }
                     }
-                }
-            };
+                };
 
-            const initializeExam = (examData) => {
-                document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
-                let navHtml = '';
-                examData.questionBlocks.forEach(block => {
-                    const passageNum = block.passage;
-                    const processItem = item => {
-                        navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
-                        questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
-                    };
-                    if (block.items) { block.items.forEach(processItem); } 
-                    else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
-                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
-                        questionDataMap.set(qNum, { answer, type: block.type });
-                    });}
-                });
-                navigationPaneEl.innerHTML = navHtml;
-                passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}">${p.content}</div>`).join('');
-                questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
-                const savedTheme = localStorage.getItem('ielts-theme') || 'light';
-                document.body.classList.toggle('dark', savedTheme === 'dark');
-                document.getElementById('theme-toggle').value = savedTheme;
-                initializeListeners();
-                showPassageAndQuestions("1", true);
-                loadingOverlayEl.style.display = 'none';
-                examContainerEl.style.display = 'flex';
-                let time = examData.timeLimitMinutes * 60;
-                timerInterval = setInterval(() => {
-                    if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
-                    timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
-                }, 1000);
-            };
-            
-            const validateAccessCodeAndStartExam = async (userCode) => {
-                 if (!userCode || userCode.length !== 6) return;
-                
-                loadingOverlayEl.style.display = 'flex';
-                loadingOverlayEl.innerText = "Đang xác thực mã...";
-                codeErrorEl.innerText = "";
-                enteredCode = userCode.trim().toUpperCase();
-                const testRef = db.collection("tests").doc(currentTestId);
+                const initializeExam = (examData) => {
+                    const examContainerHtml = `
+                        <div class="unified-panel">
+                            <header class="exam-header glass-effect">
+                                <div class="header-left"><span>IELTS</span></div>
+                                <div class="header-center" id="exam-title">Reading Test</div>
+                                <div class="header-right"><div id="timer">60:00</div></div>
+                            </header>
+                            <main class="main-content">
+                                <div class="panel passage-panel" id="passage-panel"><div id="passage-content" class="passage-content"></div></div>
+                                <div id="resizer"></div>
+                                <div class="panel questions-panel" id="questions-panel"><div id="questions-content"></div></div>
+                            </main>
+                            <footer class="exam-footer glass-effect">
+                                <div class="navigation-controls">
+                                    <div class="nav-left-group">
+                                        <select id="passage-select" class="themed-select">
+                                            ${examData.passages.map(p => `<option value="${p.id}">Passage ${p.id}</option>`).join('')}
+                                        </select>
+                                        <div id="navigation-pane" class="navigation-pane"></div>
+                                    </div>
+                                    <div class="footer-buttons">
+                                        <button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button>
+                                        <button id="submit-btn" class="btn btn-main-action">Nộp bài</button>
+                                    </div>
+                                </div>
+                            </footer>
+                        </div>`;
+                    examContainerEl.innerHTML = examContainerHtml;
 
-                try {
-                    const testData = await db.runTransaction(async (transaction) => {
-                        const testDoc = await transaction.get(testRef);
-                        if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
-                        
-                        const data = testDoc.data();
-                        const codes = data.accessCodes || [];
-                        const codeIndex = codes.findIndex(c => c.code === enteredCode);
-
-                        if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
-                        if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
-
-                        let studentName = "";
-                        const codeInfo = codes[codeIndex];
-
-                        if (codeInfo.studentEmail) {
-                            if (codeInfo.studentEmail !== currentUser.email) {
-                                throw new Error("Mã này không được gán cho tài khoản của bạn.");
-                            }
-                        } else {
-                            studentName = prompt("Đây là một mã dự phòng. Vui lòng nhập họ và tên của bạn để tiếp tục:");
-                            if (!studentName || studentName.trim() === "") throw new Error("Hủy bỏ do chưa nhập tên.");
-                            currentUser.displayName = studentName.trim();
-                        }
-                        
-                        const updatedCodes = [...codes];
-                        updatedCodes[codeIndex].isUsed = true;
-                        if (studentName) {
-                            updatedCodes[codeIndex].studentEmail = currentUser.email;
-                            updatedCodes[codeIndex].studentName = studentName.trim();
-                        }
-                        transaction.update(testRef, { accessCodes: updatedCodes });
-                        
-                        return data;
+                    document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
+                    let navHtml = '';
+                    examData.questionBlocks.forEach(block => {
+                        const passageNum = block.passage;
+                        const processItem = item => {
+                            navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
+                            questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
+                        };
+                        if (block.items) { block.items.forEach(processItem); } 
+                        else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
+                            navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
+                            questionDataMap.set(qNum, { answer, type: block.type });
+                        });}
                     });
                     
-                    codeModalEl.classList.remove('show');
-                    loadingOverlayEl.innerText = "Đang tải đề thi...";
-                    initializeExam(testData);
-
-                } catch (error) {
+                    document.getElementById('navigation-pane').innerHTML = navHtml;
+                    document.getElementById('passage-content').innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
+                    document.getElementById('questions-content').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
+                    
+                    initializeListeners(examData);
+                    showPassageAndQuestions("1", true);
                     loadingOverlayEl.style.display = 'none';
-                    codeErrorEl.innerText = error.message;
-                    codeInputs.forEach(input => input.value = '');
-                    codeInputs[0].focus();
-                }
+                    examContainerEl.style.display = 'flex';
+                    
+                    let time = examData.timeLimitMinutes * 60;
+                    timerInterval = setInterval(() => {
+                        if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
+                        const timerEl = document.getElementById('timer');
+                        if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+                    }, 1000);
+                };
+
+                const validateAccessCodeAndStartExam = async (userCode) => {
+                    if (!userCode || userCode.length !== 6) return;
+                    
+                    loadingOverlayEl.style.display = 'flex';
+                    loadingOverlayEl.innerText = "Đang xác thực mã...";
+                    codeErrorEl.innerText = "";
+                    enteredCode = userCode.trim().toUpperCase();
+                    const testRef = db.collection("tests").doc(currentTestId);
+
+                    try {
+                        const testData = await db.runTransaction(async (transaction) => {
+                            const testDoc = await transaction.get(testRef);
+                            if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
+                            
+                            const data = testDoc.data();
+                            const codes = data.accessCodes || [];
+                            const codeIndex = codes.findIndex(c => c.code === enteredCode);
+
+                            if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
+                            if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
+
+                            const codeInfo = codes[codeIndex];
+                            let studentName = "";
+
+                            if (codeInfo.studentEmail && codeInfo.studentEmail !== currentUser.email) {
+                                throw new Error("Mã này không được gán cho tài khoản của bạn.");
+                            }
+                            
+                            if (!codeInfo.studentEmail) { // Mã dự phòng
+                                studentName = await promptForName();
+                                currentUser.displayName = studentName;
+                            }
+                            
+                            const updatedCodes = [...codes];
+                            updatedCodes[codeIndex].isUsed = true;
+                            if (studentName) {
+                                updatedCodes[codeIndex].studentEmail = currentUser.email;
+                                updatedCodes[codeIndex].studentName = studentName;
+                            }
+                            transaction.update(testRef, { accessCodes: updatedCodes });
+                            
+                            return data;
+                        });
+                        
+                        codeModalEl.classList.remove('show');
+                        loadingOverlayEl.innerText = "Đang tải đề thi...";
+                        mainApp(testData); // Gọi lại mainApp với dữ liệu
+                    } catch (error) {
+                        loadingOverlayEl.style.display = 'none';
+                        codeErrorEl.innerText = error.message;
+                        codeInputs.forEach(input => input.value = '');
+                        codeInputs[0].focus();
+                    }
+                };
+
+                auth.onAuthStateChanged(user => {
+                    if (isAuthCheckComplete) return;
+                    if (user) {
+                        isAuthCheckComplete = true;
+                        currentUser = user;
+                        const urlParams = new URLSearchParams(window.location.search);
+                        currentTestId = urlParams.get('testId');
+                        if (currentTestId) {
+                            loadingOverlayEl.style.display = 'none';
+                            codeModalEl.classList.add('show');
+                            codeInputs[0].focus();
+                        } else {
+                            loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
+                            loadingOverlayEl.style.display = 'flex';
+                        }
+                    } else {
+                        isAuthCheckComplete = true;
+                        window.location.href = 'index.html'; 
+                    }
+                });
+
+                // ... các hàm khác ...
             };
             
-            const initializeListeners = () => {
-                questionsContentEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
-                questionsContentEl.addEventListener('change', e => {
-                    const target = e.target;
-                    const qNum = target.name?.replace('q', '') || target.dataset.qNum;
-                    if (target.matches('input[type="radio"]')) {
-                        if (target.closest('.tfn-options')) {
-                            target.closest('.tfn-options').querySelectorAll('.tfn-label').forEach(l => l.classList.remove('selected'));
-                            target.parentElement.classList.add('selected');
-                        }
-                        updateAnswer(qNum, target.value);
-                    } else if (target.matches('select')) { updateAnswer(qNum, target.value); }
-                });
-                questionsContentEl.addEventListener('dragstart', e => { if (e.target.matches('.drag-option')) { dragged = e.target; setTimeout(() => e.target.classList.add('dragging'), 0); }});
-                questionsContentEl.addEventListener('dragend', e => { if (e.target.matches('.drag-option')) e.target.classList.remove('dragging'); });
-                questionsContentEl.addEventListener('dragover', e => e.preventDefault());
-                questionsContentEl.addEventListener('drop', e => {
-                    e.preventDefault(); if (!dragged) return;
-                    const dropZone = e.target.closest('.drop-target, .drag-options-area');
-                    if (!dropZone) { dragged = null; return; }
-                    const sourceContainer = dragged.parentElement;
-                    if (sourceContainer.matches('.drop-target')) updateAnswer(sourceContainer.dataset.qNum, null);
-                    if (dropZone.matches('.drop-target')) {
-                        if (dropZone.children.length > 0) dropZone.closest('.drag-drop-container').querySelector('.drag-options-area').appendChild(dropZone.firstElementChild);
-                        dropZone.appendChild(dragged);
-                        updateAnswer(dropZone.dataset.qNum, dragged.dataset.value);
-                    } else if (dropZone.matches('.drag-options-area')) { dropZone.appendChild(dragged); }
-                    dragged = null;
-                });
-                passageSelectEl.addEventListener('change', e => showPassageAndQuestions(e.target.value));
-                document.getElementById('submit-btn').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.add('show'));
-                document.getElementById('close-modal-btn').addEventListener('click', showReview);
-                document.getElementById('confirm-submit-yes').addEventListener('click', () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); });
-                document.getElementById('confirm-submit-no').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.remove('show'));
-                document.getElementById('review-btn').addEventListener('click', () => window.location.reload());
-                document.getElementById('settings-btn').addEventListener('click', e => { e.stopPropagation(); settingsDropdownEl.classList.toggle('show'); });
-                settingsDropdownEl.addEventListener('click', e => e.stopPropagation());
-                document.addEventListener('click', () => settingsDropdownEl.classList.remove('show'));
-                document.getElementById('text-size').addEventListener('change', e => { document.documentElement.style.fontSize = `${15 * parseFloat(e.target.value)}px`; });
-                document.getElementById('theme-toggle').addEventListener('change', e => { document.body.classList.toggle('dark', e.target.value === 'dark'); localStorage.setItem('ielts-theme', e.target.value); });
-                navigationPaneEl.addEventListener('click', e => {
-                    const navItem = e.target.closest('.nav-item'); if (!navItem) return;
-                    const passageNum = navItem.dataset.passageNum;
-                    if (passageSelectEl.value !== passageNum) { passageSelectEl.value = passageNum; showPassageAndQuestions(passageNum); }
-                    setTimeout(() => {
-                        const questionEl = document.querySelector(`[data-q-container="${navItem.dataset.qNum}"]`);
-                        if (questionEl) { questionsPanelEl.scrollTop = questionEl.offsetTop - 30; document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('current')); navItem.classList.add('current'); }
-                    }, 200);
-                });
-                resizerEl.addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
-            };
-
-            const showReview = () => {
-                resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
-                document.getElementById('submit-btn').style.display = 'none';
-                document.getElementById('review-btn').style.display = 'block';
-                document.querySelectorAll('input, select').forEach(el => el.disabled = true);
-                document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
-                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
-                passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0;
-                questionDataMap.forEach((data, qNum) => {
-                    const userAnswer = userAnswers[qNum];
-                    const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
-                    if (!qContainer) return;
-                    const isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
-                    const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
-                    const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
-                    parent.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    if (!isCorrect) {
-                        const correctAnsEl = document.createElement('span');
-                        correctAnsEl.className = 'correct-answer-text';
-                        let correctAnswerText = data.answer;
-                        if (data.type === 'multiple_choice_one_answer') {
-                            const correctIndex = parseInt(data.answer);
-                            const optionText = qContainer.querySelectorAll('span')[correctIndex + 1]?.textContent;
-                            correctAnswerText = optionText || data.answer;
-                        } else if (data.type === 'matching_features') {
-                            const correctIndex = data.answer.charCodeAt(0) - 65;
-                            correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex + 1]?.text;
-                        }
-                        correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
-                        if (!parent.querySelector('.correct-answer-text')) {
-                            (parent.parentElement || parent).appendChild(correctAnsEl);
-                        }
-                    }
-                });
-            };
-
-            auth.onAuthStateChanged(user => {
-                if (isAuthCheckComplete) return;
-
-                if (user) {
-                    isAuthCheckComplete = true;
-                    currentUser = user;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    currentTestId = urlParams.get('testId');
-                    if (currentTestId) {
-                        loadingOverlayEl.style.display = 'none';
-                        codeModalEl.classList.add('show');
-                        codeInputs[0].focus();
-                    } else {
-                        loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
-                        loadingOverlayEl.style.display = 'flex';
-                    }
-                } else {
-                    isAuthCheckComplete = true;
-                    window.location.href = 'index.html'; 
-                }
-            });
+            mainApp(); // Initial call
         });
     </script>
 </body>
