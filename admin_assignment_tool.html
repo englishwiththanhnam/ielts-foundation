@@ -9,6 +9,7 @@
         body { font-family: 'Be Vietnam Pro', sans-serif; } 
         .module-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        fieldset:disabled { opacity: 0.5; }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
@@ -20,40 +21,45 @@
             <div>
                 <label for="firebaseConfig" class="block text-sm font-medium text-gray-700 mb-1">1. Dán Firebase Config:</label>
                 <textarea id="firebaseConfig" rows="4" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="const firebaseConfig = {...};"></textarea>
+                <button id="connect-btn" class="mt-2 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-all">
+                    Kết nối & Tải dữ liệu
+                </button>
             </div>
             
-            <div class="border-t pt-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Thông tin Bài tập</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-1">
-                        <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label>
-                        <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></select>
+            <fieldset id="assignment-form" disabled>
+                <div class="border-t pt-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Thông tin Bài tập</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1">
+                            <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label>
+                            <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
+                            <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày 02/08/2025">
+                        </div>
                     </div>
-                    <div class="md:col-span-2">
-                        <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
-                        <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày 02/08/2025">
+                </div>
+
+                <div class="border-t pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">3. Các học phần</h2>
+                        <button id="add-module-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold">
+                            + Thêm học phần
+                        </button>
+                    </div>
+                    <div id="modules-container" class="space-y-4">
+                        <!-- Các học phần sẽ được thêm vào đây -->
                     </div>
                 </div>
-            </div>
 
-            <div class="border-t pt-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">3. Các học phần</h2>
-                    <button id="add-module-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-semibold">
-                        + Thêm học phần
-                    </button>
-                </div>
-                <div id="modules-container" class="space-y-4">
-                    <!-- Các học phần sẽ được thêm vào đây -->
-                </div>
-            </div>
-
-            <button id="create-assignment-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
-                Tạo Bài Tập
-            </button>
+                <button id="create-assignment-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
+                    Tạo Bài Tập
+                </button>
+            </fieldset>
 
             <div id="status" class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm">
-                Trạng thái: Sẵn sàng.
+                Trạng thái: Chưa kết nối. Vui lòng dán Firebase Config và nhấn nút kết nối.
             </div>
         </div>
     </div>
@@ -81,7 +87,6 @@
         }
 
         async function loadInitialData() {
-            if (!initializeFirebase()) return;
             const statusEl = document.getElementById('status');
             statusEl.innerHTML += '<br>Đang tải danh sách lớp học, bài thi và bộ từ vựng...';
 
@@ -140,7 +145,7 @@
             if (e.target.classList.contains('module-type')) {
                 const type = e.target.value;
                 const idSelector = e.target.closest('.module-row').querySelector('.module-id');
-                idSelector.innerHTML = '<option>-- Chọn nội dung --</option>';
+                idSelector.innerHTML = '<option value="">-- Chọn nội dung --</option>';
                 idSelector.disabled = true;
 
                 let options = [];
@@ -233,8 +238,28 @@
             }
         });
         
-        // Tự động tải dữ liệu khi trang được mở
-        window.onload = loadInitialData;
+        // [THAY ĐỔI] Gắn sự kiện vào nút bấm thay vì window.onload
+        document.getElementById('connect-btn').addEventListener('click', async (event) => {
+            const connectButton = event.target;
+            const statusEl = document.getElementById('status');
+            const form = document.getElementById('assignment-form');
+
+            connectButton.disabled = true;
+            connectButton.textContent = 'Đang kết nối...';
+
+            if (initializeFirebase()) {
+                await loadInitialData();
+                form.disabled = false; // Mở khóa form
+                statusEl.innerHTML += '<br>✅ Sẵn sàng để tạo bài tập.';
+                connectButton.textContent = 'Đã kết nối & Tải xong!';
+                connectButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                connectButton.classList.add('bg-gray-400');
+            } else {
+                statusEl.textContent = 'Kết nối thất bại. Vui lòng kiểm tra lại Firebase Config.';
+                connectButton.disabled = false;
+                connectButton.textContent = 'Thử lại';
+            }
+        });
     </script>
 </body>
 </html>
