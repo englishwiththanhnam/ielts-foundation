@@ -44,7 +44,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
-        // Dán firebaseConfig của bạn vào đây
 const firebaseConfig = {
   apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
   authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
@@ -54,6 +53,13 @@ const firebaseConfig = {
   appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
   measurementId: "G-CZD89F0FC3"
 };
+        
+        // [FIX] Thêm đoạn mã kiểm tra cấu hình Firebase
+        if (!firebaseConfig || firebaseConfig.apiKey === "...") {
+            document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold text-xl">LỖI CẤU HÌNH: Bạn chưa dán firebaseConfig vào file `assignment.html`. Vui lòng mở file và điền đầy đủ thông tin.</p>';
+            // Dừng thực thi nếu chưa có config
+            throw new Error("Firebase config is missing in assignment.html");
+        }
         
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
@@ -85,6 +91,7 @@ const firebaseConfig = {
                 mainContent.classList.remove('hidden');
                 loadingState.classList.add('hidden');
             } else {
+                // Chỉ chuyển hướng nếu không có người dùng nào được xác thực
                 window.location.href = 'login.html';
             }
         });
@@ -107,6 +114,7 @@ const firebaseConfig = {
                 assignmentData.modules.forEach((module, index) => {
                     const isCompleted = progressData.completedModules && progressData.completedModules[module.url] === true;
                     const moduleEl = document.createElement('a');
+                    
                     // Gắn assignmentId vào URL của module để các trang con có thể sử dụng
                     const moduleUrl = new URL(module.url, window.location.origin);
                     moduleUrl.searchParams.append('assignmentId', assignmentId);
