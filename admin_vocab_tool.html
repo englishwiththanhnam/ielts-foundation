@@ -53,8 +53,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
-        // --- TÁI HIỆN LOGIC CỦA generate_app.py BẰNG JAVASCRIPT ---
-        
         let db;
 
         function initializeFirebase() {
@@ -72,19 +70,30 @@
             }
         }
 
+        // [FIX] Hàm parseCsv được viết lại hoàn toàn để xử lý dấu phẩy trong dữ liệu
         function parseCsv(csvText) {
             const lines = csvText.trim().split('\n');
-            const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const rows = [];
-            for (let i = 1; i < lines.length; i++) {
-                // Simple CSV parsing, may need improvement for complex cases
-                const values = lines[i].split(',');
-                let row = {};
-                for (let j = 0; j < header.length; j++) {
-                    row[header[j]] = values[j] ? values[j].trim() : '';
-                }
-                rows.push(row);
-            }
+            if (lines.length < 1) return [];
+
+            const headerLine = lines.shift();
+            const headers = headerLine.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+            
+            const rows = lines.map(line => {
+                const row = {};
+                // Regex to split by comma but ignore commas inside double quotes
+                const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                
+                headers.forEach((header, index) => {
+                    let value = (values[index] || '').trim();
+                    // Remove quotes if they exist at the start and end
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.substring(1, value.length - 1);
+                    }
+                    row[header] = value.replace(/""/g, '"'); // Handle escaped quotes
+                });
+                return row;
+            });
+
             return rows;
         }
 
@@ -101,7 +110,8 @@
 
                 let found = false;
                 for (const word of vocabWords) {
-                    const regex = new RegExp(`\\b${word}\\b`, 'i');
+                    if (!word) continue;
+                    const regex = new RegExp(`\\b${word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
                     if (regex.test(structureText)) {
                         structuresWithRootWord.push({ ...struct, word: word });
                         found = true;
