@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <!-- PHẦN HEAD GIỮ NGUYÊN TỪ FILE TEMPLATE.HTML CỦA BẠN -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học phần Từ vựng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PHẦN STYLE GIỮ NGUYÊN TỪ FILE TEMPLATE.HTML CỦA BẠN -->
+    <style>
+        /* Dán toàn bộ nội dung thẻ <style> từ file template.html của bạn vào đây */
+        :root { --blur-intensity: 12px; /* ... */ }
+        /* ... */
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+    </style>
+</head>
+<body>
+    <!-- PHẦN BODY GIỮ NGUYÊN TỪ FILE TEMPLATE.HTML CỦA BẠN -->
+    <div class="background-shapes">
+        <!-- ... -->
+    </div>
+    <div class="app-layout">
+        <nav id="sidebar" class="glass-panel">
+            <!-- ... -->
+        </nav>
+        <div id="sidebar-overlay"></div>
+        <main id="app">
+            <header class="main-header">
+                <!-- ... -->
+            </header>
+            <div id="main-content">
+                <!-- Nội dung sẽ được render bởi JS -->
+            </div>
+        </main>
+    </div>
+    <!-- Các Modal cũng giữ nguyên -->
+    <div id="word-list-modal" class="modal">
+        <!-- ... -->
+    </div>
+
+    <!-- [THAY ĐỔI QUAN TRỌNG] SCRIPT TÍCH HỢP FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script type="module">
+        // --- PHẦN 1: KẾT NỐI FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let assignmentId, vocabId, userId;
+
+        // --- PHẦN 2: LOGIC APP TỪ VỰNG CỦA BẠN ---
+        // Toàn bộ đối tượng App từ file template.html sẽ được dán vào đây
+        const App = {
+            data: {
+                // ...
+            },
+
+            // [SỬA ĐỔI] Hàm init() để tích hợp Firebase
+            async init() {
+                this.initTheme();
+                this.initModals();
+                this.initSidebarNav();
+                this.initResponsiveSidebar();
+
+                auth.onAuthStateChanged(async user => {
+                    if (user) {
+                        userId = user.uid;
+                        const urlParams = new URLSearchParams(window.location.search);
+                        assignmentId = urlParams.get('assignmentId');
+                        vocabId = urlParams.get('vocabId');
+
+                        if (!assignmentId || !vocabId) {
+                            document.getElementById('main-content').innerHTML = `<h1>Lỗi: URL không hợp lệ.</h1>`;
+                            return;
+                        }
+                        
+                        // [MỚI] Tải dữ liệu từ Firestore thay vì localStorage
+                        await this.loadDataFromFirestore();
+                        this.renderDashboard();
+
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                });
+            },
+
+            // [SỬA ĐỔI] Hàm loadData() thành loadDataFromFirestore()
+            async loadDataFromFirestore() {
+                // 1. Tải bộ từ vựng gốc từ collection 'vocab_sets'
+                const vocabSetDoc = await db.collection('vocab_sets').doc(vocabId).get();
+                if (!vocabSetDoc.exists) {
+                    console.error("Không tìm thấy bộ từ vựng!");
+                    return;
+                }
+                const vocabSetData = vocabSetDoc.data();
+                const originalWords = vocabSetData.words;
+
+                // 2. Tải tiến độ của học sinh từ 'student_progress'
+                const progressDoc = await db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get();
+                const progressData = progressDoc.exists ? progressDoc.data().vocabProgress?.[vocabId] : null;
+
+                if (progressData) {
+                    // Nếu có tiến độ, hợp nhất nó với dữ liệu gốc
+                    this.data.words = progressData.words;
+                    this.data.skippedItems = progressData.skippedItems || [];
+                } else {
+                    // Nếu chưa có, khởi tạo từ dữ liệu gốc
+                    this.data.words = originalWords.map(w => ({ ...w, isLearned: false }));
+                    this.data.skippedItems = [];
+                }
+
+                // Các bước xử lý dữ liệu khác giữ nguyên
+                this.analyzeAndTagWords(); 
+                this.groupWordFamilies();
+                this.parseAndStoreStructures();
+                // [MỚI] Cập nhật lại isLearned cho structures dựa trên progress
+                if (progressData && progressData.structures) {
+                    this.data.structures.forEach(s => {
+                        const savedStruct = progressData.structures.find(ps => ps.id === s.id);
+                        if (savedStruct) {
+                            s.isLearned = savedStruct.isLearned;
+                        }
+                    });
+                }
+            },
+
+            // [SỬA ĐỔI] Hàm saveData() để lưu vào Firestore
+            async saveData() {
+                if (!userId || !assignmentId || !vocabId) return;
+
+                const progressRef = db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId);
+                const progressPayload = {
+                    [`vocabProgress.${vocabId}`]: {
+                        words: this.data.words,
+                        structures: this.data.structures,
+                        skippedItems: this.data.skippedItems,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }
+                };
+                
+                // Dùng set với merge:true để tạo hoặc cập nhật document
+                await progressRef.set(progressPayload, { merge: true });
+            },
+            
+            // [MỚI] Hàm hoàn thành học phần
+            async markModuleAsCompleted() {
+                const progressRef = db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId);
+                const moduleUrl = `vocab_app.html?vocabId=${vocabId}&assignmentId=${assignmentId}`;
+                await progressRef.set({
+                    completedModules: {
+                        [moduleUrl]: true
+                    }
+                }, { merge: true });
+                window.location.href = `assignment.html?id=${assignmentId}`;
+            },
+
+            // ... Các hàm khác của App (renderDashboard, renderMCQ, v.v...) giữ nguyên ...
+            // Chỉ cần đảm bảo hàm init() và saveData() được sửa đổi như trên.
+            // Thêm một nút "Hoàn thành" ở đâu đó, ví dụ trong Dashboard khi tất cả từ đã học.
+            renderDashboard() {
+                // ... code render dashboard cũ ...
+                const allLearned = this.data.words.every(w => w.isLearned) && this.data.structures.every(s => s.isLearned);
+                if (allLearned) {
+                    main.innerHTML += `<div class="text-center mt-8"><button id="complete-module-btn" class="btn btn-main-action">🎉 Hoàn thành & Quay lại</button></div>`;
+                    document.getElementById('complete-module-btn').addEventListener('click', () => this.markModuleAsCompleted());
+                }
+            }
+        };
+
+        App.init();
+    </script>
+</body>
+</html>
