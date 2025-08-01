@@ -14,6 +14,7 @@
         .sidebar-link.active { background-color: #4f46e5; color: white; font-weight: 600; }
         .modal { display: none; }
         .modal.is-open { display: flex; }
+        .tab-button.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -61,27 +62,7 @@
 
     <!-- Modal for adding student -->
     <div id="add-student-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full items-center justify-center">
-        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Tạo Tài Khoản Học Sinh Mới</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="student-name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
-                    <input type="text" id="student-name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label for="student-email" class="block text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" id="student-email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label for="student-password" class="block text-sm font-medium text-gray-700">Mật khẩu ban đầu</label>
-                    <input type="password" id="student-password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end space-x-3">
-                <button id="cancel-add-student" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
-                <button id="confirm-add-student" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Tạo Tài Khoản</button>
-            </div>
-        </div>
+        <!-- ... (Modal content) ... -->
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -108,9 +89,8 @@ const firebaseConfig = {
         const mainContent = document.getElementById('main-content');
         const adminName = document.getElementById('admin-name');
         const logoutButton = document.getElementById('logout-button');
-        const addStudentModal = document.getElementById('add-student-modal');
-
-        auth.onAuthStateChanged(user => {
+        
+           auth.onAuthStateChanged(user => {
             if (user) {
                 db.collection('users').doc(user.uid).get().then(doc => {
                     if (doc.exists && doc.data().role === 'admin') {
@@ -145,7 +125,10 @@ const firebaseConfig = {
             });
         });
 
-        async function renderDashboard() {
+
+        // --- MODULE RENDERING FUNCTIONS ---
+
+   async function renderDashboard() {
             pageTitle.textContent = 'Dashboard';
             mainContent.innerHTML = `<p>Đang tải thống kê...</p>`;
             
@@ -183,48 +166,58 @@ const firebaseConfig = {
 
         async function renderClassManagement() {
             pageTitle.textContent = 'Quản Lý Lớp Học';
-            mainContent.innerHTML = `<p>Đang tải danh sách lớp học...</p>`;
-             try {
-                const snapshot = await db.collection('classes').get();
-                let classHtml = `
-                    <div class="mb-6">
-                        <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="p-2 border rounded-md">
-                        <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp Mới</button>
+            mainContent.innerHTML = `<p>Đang tải...</p>`;
+            
+            const [classesSnap, curriculumsSnap] = await Promise.all([
+                db.collection('classes').get(),
+                db.collection('curriculums').get()
+            ]);
+
+            const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+            let classHtml = `
+                <div class="mb-6 bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold mb-2">Tạo Lớp Mới</h3>
+                    <div class="flex gap-4">
+                        <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="flex-grow p-2 border rounded-md">
+                        <select id="new-class-curriculum" class="p-2 border rounded-md">
+                            <option value="">-- Chọn giáo trình --</option>
+                            ${curriculumOptions}
+                        </select>
+                        <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp</button>
                     </div>
-                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                        <table class="min-w-full bg-white">
-                            <thead class="bg-gray-800 text-white">
-                                <tr>
-                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
-                                    <th class="w-1/3 text-left py-3 px-4 uppercase font-semibold text-sm">ID Lớp</th>
-                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-700">`;
-                
-                snapshot.forEach(doc => {
-                    const classData = doc.data();
-                    classHtml += `
-                        <tr>
-                            <td class="w-1/3 text-left py-3 px-4">${classData.className}</td>
-                            <td class="w-1/3 text-left py-3 px-4">${doc.id}</td>
-                            <td class="text-left py-3 px-4">
-                                <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-800 text-white">
+                            <tr>
+                                <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
+                                <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Giáo trình</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">`;
+            
+            classesSnap.forEach(doc => {
+                const classData = doc.data();
+                const curriculum = curriculums.find(c => c.id === classData.curriculumId);
+                classHtml += `
+                    <tr>
+                        <td class="w-2/5 text-left py-3 px-4">${classData.className}</td>
+                        <td class="w-2/5 text-left py-3 px-4">${curriculum ? curriculum.name : 'Chưa gán'}</td>
+                        <td class="text-left py-3 px-4">
+                            <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
+                        </td>
+                    </tr>
+                `;
+            });
 
-                classHtml += `</tbody></table></div>`;
-                mainContent.innerHTML = classHtml;
-
-            } catch (error) {
-                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học.</p>`;
-                console.error(error);
-            }
+            classHtml += `</tbody></table></div>`;
+            mainContent.innerHTML = classHtml;
         }
 
-        async function renderStudentManagement() {
+ async function renderStudentManagement() {
             pageTitle.textContent = 'Quản Lý Học Sinh';
             mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
 
@@ -269,24 +262,73 @@ const firebaseConfig = {
             }
         }
 
-        function renderContentManagement() {
+        // [NEW] MODULE: CONTENT MANAGEMENT
+        async function renderContentManagement() {
             pageTitle.textContent = 'Quản Lý Nội Dung';
             mainContent.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <a href="admin_vocab_tool.html" target="_blank" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-xl font-bold text-green-600">Kho Từ Vựng</h3>
-                        <p class="mt-2 text-gray-600">Tạo và quản lý các bộ từ vựng cho từng unit học.</p>
-                    </a>
-                    <a href="#" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-xl font-bold text-blue-600">Kho Bài Kiểm Tra</h3>
-                        <p class="mt-2 text-gray-600">Tạo và quản lý các đề kiểm tra Reading, Listening...</p>
-                        <span class="text-sm text-gray-400">(Sắp ra mắt)</span>
-                    </a>
+                <div class="mb-4 border-b border-gray-200">
+                    <nav class="flex space-x-4" aria-label="Tabs">
+                        <button id="tab-curriculums" class="tab-button active px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Quản Lý Giáo Trình</button>
+                        <button id="tab-vocab" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Kho Từ Vựng</button>
+                        <button id="tab-tests" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Kho Bài Kiểm Tra</button>
+                    </nav>
+                </div>
+                <div id="content-display"></div>
+            `;
+            // Mặc định hiển thị tab giáo trình
+            await renderCurriculumTab();
+        }
+
+        async function renderCurriculumTab() {
+            document.getElementById('content-display').innerHTML = `<p>Đang tải giáo trình...</p>`;
+            // Logic để hiển thị, tạo, sửa, xóa giáo trình sẽ được thêm vào đây
+            document.getElementById('content-display').innerHTML = `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold mb-2">Tính năng đang được phát triển</h3>
+                    <p>Tại đây, bạn sẽ có thể tạo và sắp xếp các học phần vào từng giáo trình.</p>
                 </div>
             `;
         }
 
-        function renderAssignmentManagement() {
+        async function renderVocabInventoryTab() {
+            document.getElementById('content-display').innerHTML = `<p>Đang tải kho từ vựng...</p>`;
+            const snapshot = await db.collection('vocab_sets').get();
+            let vocabHtml = `
+                <div class="flex justify-end mb-4">
+                    <a href="admin_vocab_tool.html" target="_blank" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Bộ Từ Vựng Mới</a>
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-800 text-white">
+                            <tr>
+                                <th class="w-3/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tiêu đề</th>
+                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Loại Học Phần</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">`;
+
+            snapshot.forEach(doc => {
+                const vocab = doc.data();
+                const isSupplementary = vocab.isSupplementary === true;
+                vocabHtml += `
+                    <tr>
+                        <td class="w-3/5 text-left py-3 px-4">${vocab.title}</td>
+                        <td class="text-left py-3 px-4">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <span class="mr-3 text-sm font-medium ${!isSupplementary ? 'text-indigo-600' : 'text-gray-500'}">Gốc</span>
+                                <input type="checkbox" class="sr-only peer supplementary-toggle" data-id="${doc.id}" ${isSupplementary ? 'checked' : ''}>
+                                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                <span class="ml-3 text-sm font-medium ${isSupplementary ? 'text-green-600' : 'text-gray-500'}">Bổ sung</span>
+                            </label>
+                        </td>
+                    </tr>
+                `;
+            });
+            vocabHtml += `</tbody></table></div>`;
+            document.getElementById('content-display').innerHTML = vocabHtml;
+        }
+
+         function renderAssignmentManagement() {
             pageTitle.textContent = 'Quản Lý Bài Tập';
             mainContent.innerHTML = `
                 <div class="grid grid-cols-1 gap-6">
@@ -297,7 +339,8 @@ const firebaseConfig = {
                 </div>
             `;
         }
-        
+
+        // --- EVENT LISTENERS ---
         mainContent.addEventListener('click', async (e) => {
             if (e.target.id === 'show-add-student-modal-btn') {
                 addStudentModal.classList.add('is-open');
@@ -331,14 +374,27 @@ const firebaseConfig = {
                 }
             }
         });
-
-        document.getElementById('cancel-add-student').addEventListener('click', () => {
-            addStudentModal.classList.remove('is-open');
-        });
-
-        document.getElementById('confirm-add-student').addEventListener('click', () => {
-            alert("Chức năng này cần được thiết lập trên máy chủ (Firebase Functions) để đảm bảo bảo mật. Vui lòng tạo tài khoản trực tiếp trên Firebase Authentication Console và sau đó thêm thông tin vào Firestore.");
-        });
+            // [NEW] Chuyển tab trong Quản lý Nội dung
+            if (e.target.classList.contains('tab-button')) {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                if (e.target.id === 'tab-curriculums') await renderCurriculumTab();
+                if (e.target.id === 'tab-vocab') await renderVocabInventoryTab();
+                // if (e.target.id === 'tab-tests') await renderTestInventoryTab();
+            }
+            // [NEW] Cập nhật trạng thái học phần bổ sung
+            if (e.target.classList.contains('supplementary-toggle')) {
+                const docId = e.target.dataset.id;
+                const isChecked = e.target.checked;
+                try {
+                    await db.collection('vocab_sets').doc(docId).update({ isSupplementary: isChecked });
+                } catch (error) {
+                    console.error("Lỗi cập nhật:", error);
+                    alert("Có lỗi xảy ra, không thể cập nhật.");
+                    e.target.checked = !isChecked; // Hoàn tác lại nếu lỗi
+                }
+            }
+        ;
 
     </script>
 </body>
