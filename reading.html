@@ -286,7 +286,42 @@
                     }
                 };
                 
-                const showReview = () => { /* ... Functionality for review mode ... */ };
+                 const showReview = () => {
+                resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
+                document.getElementById('submit-btn').style.display = 'none';
+                document.getElementById('review-btn').style.display = 'block';
+                document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+                document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
+                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
+                passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0;
+
+                questionDataMap.forEach((data, qNum) => {
+                    const userAnswer = userAnswers[qNum];
+                    const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
+                    if (!qContainer) return;
+                    const isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
+                    const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
+                    const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
+                    parent.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (!isCorrect) {
+                        const correctAnsEl = document.createElement('span');
+                        correctAnsEl.className = 'correct-answer-text';
+                        let correctAnswerText = data.answer;
+                        if (data.type === 'multiple_choice_one_answer') {
+                            const correctIndex = parseInt(data.answer);
+                            const optionText = qContainer.querySelectorAll('span')[correctIndex + 1]?.textContent;
+                            correctAnswerText = optionText || data.answer;
+                        } else if (data.type === 'matching_features') {
+                            const correctIndex = data.answer.charCodeAt(0) - 65;
+                            correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex + 1]?.text;
+                        }
+                        correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
+                        if (!parent.querySelector('.correct-answer-text')) {
+                            (parent.parentElement || parent).appendChild(correctAnsEl);
+                        }
+                    }
+                });
+            };
                 
                 const updateAnswer = (qNum, value) => {
                     const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
