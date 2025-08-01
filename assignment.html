@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết bài tập - English with Thành Nam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .module-link:hover .module-title { color: #4f46e5; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="dashboard.html" class="text-2xl font-bold text-indigo-600 hover:text-indigo-700">‹ Quay lại Dashboard</a>
+            <div>
+                <span id="user-display-name" class="text-gray-700 mr-4"></span>
+                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Đăng xuất</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <div id="loading-state" class="text-center">
+            <p class="text-lg text-gray-600">Đang tải chi tiết bài tập...</p>
+        </div>
+
+        <div id="main-content" class="hidden">
+            <h1 id="assignment-title" class="text-3xl font-bold text-gray-800 mb-2"></h1>
+            <p id="assignment-date" class="text-md text-gray-500 mb-8"></p>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-6">Các học phần cần hoàn thành:</h2>
+                <div id="modules-list" class="space-y-5">
+                    </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        // Dán firebaseConfig của bạn vào đây
+        const firebaseConfig = {
+            apiKey: "...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM Elements
+        const loadingState = document.getElementById('loading-state');
+        const mainContent = document.getElementById('main-content');
+        const userDisplayName = document.getElementById('user-display-name');
+        const assignmentTitle = document.getElementById('assignment-title');
+        const assignmentDate = document.getElementById('assignment-date');
+        const modulesList = document.getElementById('modules-list');
+        const logoutButton = document.getElementById('logout-button');
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                userDisplayName.textContent = user.displayName || user.email;
+                const urlParams = new URLSearchParams(window.location.search);
+                const assignmentId = urlParams.get('id');
+
+                if (!assignmentId) {
+                    loadingState.textContent = 'Lỗi: Không tìm thấy ID bài tập.';
+                    return;
+                }
+                
+                await loadAssignmentDetails(assignmentId, user.uid);
+                mainContent.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function loadAssignmentDetails(assignmentId, userId) {
+            try {
+                const assignmentDoc = await db.collection('assignments').doc(assignmentId).get();
+                if (!assignmentDoc.exists) {
+                    assignmentTitle.textContent = 'Không tìm thấy bài tập này.';
+                    return;
+                }
+                const assignmentData = assignmentDoc.data();
+                assignmentTitle.textContent = assignmentData.title;
+                assignmentDate.textContent = `Ngày giao: ${assignmentData.assignmentDate.toDate().toLocaleDateString('vi-VN')}`;
+
+                const progressDoc = await db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get();
+                const progressData = progressDoc.exists ? progressDoc.data() : { completedModules: {} };
+                
+                modulesList.innerHTML = '';
+                assignmentData.modules.forEach((module, index) => {
+                    const isCompleted = progressData.completedModules && progressData.completedModules[module.url] === true;
+                    const moduleEl = document.createElement('a');
+                    // Gắn assignmentId vào URL của module để các trang con có thể sử dụng
+                    const moduleUrl = new URL(module.url, window.location.origin);
+                    moduleUrl.searchParams.append('assignmentId', assignmentId);
+                    
+                    moduleEl.href = moduleUrl.href;
+                    moduleEl.className = 'module-link flex items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-indigo-500 transition-all';
+                    
+                    const icon = module.type === 'test' 
+                        ? `<svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>`
+                        : `<svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"></path></svg>`;
+
+                    const statusIcon = isCompleted
+                        ? `<div class="flex items-center gap-2 text-green-600"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>Đã hoàn thành</span></div>`
+                        : `<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+
+                    moduleEl.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            ${icon}
+                            <div>
+                                <div class="font-semibold text-gray-500">Học phần ${index + 1}</div>
+                                <div class="module-title text-lg font-bold text-gray-800">${module.title}</div>
+                            </div>
+                        </div>
+                        ${statusIcon}
+                    `;
+                    modulesList.appendChild(moduleEl);
+                });
+
+            } catch (error) {
+                console.error("Lỗi khi tải chi tiết bài tập:", error);
+                loadingState.textContent = 'Đã xảy ra lỗi khi tải dữ liệu.';
+            }
+        }
+
+        logoutButton.addEventListener('click', () => {
+            auth.signOut().then(() => { window.location.href = 'index.html'; });
+        });
+    </script>
+</body>
+</html>
