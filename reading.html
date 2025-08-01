@@ -79,16 +79,13 @@
         .btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
         .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
         .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
-        
-        /* CSS CHO MODAL */
+        .btn-secondary { background: rgba(0, 0, 0, 0.05); color: var(--text-primary); }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
         .modal.show { display: flex; opacity: 1; transform: scale(1); pointer-events: auto; }
         .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; transition: transform 0.3s ease; transform: translateY(10px); }
         .modal.show .modal-content { transform: translateY(0); }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 2rem; transition: opacity 0.3s ease; }
         body.dark #loading-overlay { background: rgba(15, 23, 42, 0.8); }
-
-        /* CSS CHO CỬA SỔ NHẬP MÃ & TÊN */
         .input-modal .modal-content { max-width: 420px; padding: 32px; }
         .input-modal h2 { font-size: 1.75rem; color: var(--text-primary); margin-bottom: 8px; }
         .input-modal p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 24px; }
@@ -97,32 +94,15 @@
         .code-input { width: 50px; font-size: 2rem; }
         .code-input:focus, #name-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.3); }
         .input-error { color: #ef4444; font-weight: 600; height: 20px; transition: opacity 0.2s; }
-        #name-modal-form { margin-bottom: 24px; }
-
-        /* PHẦN CSS CÒN LẠI */
-        .passage-header { margin-bottom: 2rem; }
-        .passage-number { text-transform: uppercase; font-weight: 600; color: var(--text-secondary); font-size: 0.9em; margin-bottom: 1rem; }
-        .passage-instruction { color: var(--text-primary); margin-bottom: 2rem; font-size: 1em; }
-        .passage-title { font-size: 2em; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
-        .passage-subtitle { font-style: italic; font-size: 1.1em; color: var(--text-secondary); margin-bottom: 2rem; }
-        .passage-content p { line-height: 1.7; text-align: justify; color: var(--text-primary) !important; margin-bottom: 1em; }
-        #resizer { width: 8px; cursor: col-resize; background: transparent; flex-shrink: 0; border-radius: 4px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        #resizer::before { content: ''; width: 2px; height: 50px; background-color: var(--glass-border-color); border-radius: 1px; transition: all 0.2s ease; }
-        #resizer:hover::before { background-color: var(--primary-accent); transform: scaleX(2); }
+        #name-modal-form { margin-bottom: 1rem; }
+        .main-content { display: flex; flex-grow: 1; overflow: hidden; background: var(--panel-bg-color); position: relative; }
+        .panel { padding: 24px; overflow-y: auto; height: 100%; box-sizing: border-box; }
+        .passage-panel, .questions-panel { width: 50%; }
+        #resizer { width: 8px; cursor: col-resize; background: transparent; flex-shrink: 0; }
         .exam-footer { padding: 12px 24px; display: flex; align-items: center; flex-shrink: 0; border-top: 1px solid var(--glass-border-color); }
-        .navigation-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem; }
-        .nav-left-group { display: flex; align-items: center; gap: 1rem; flex-grow: 1; overflow: hidden; }
-        .navigation-pane { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; -ms-overflow-style: none; scrollbar-width: none; }
-        .navigation-pane::-webkit-scrollbar { display: none; }
-        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; font-weight: 600; color: var(--text-secondary); }
-        .nav-item:hover { background-color: rgba(109, 40, 217, 0.1); transform: translateY(-2px); }
-        .nav-item.answered { background-color: var(--primary-accent); color: white; border-color: transparent; }
-        body.dark .nav-item.answered { color: #1e293b; }
-        .nav-item.current { border-color: var(--primary-accent); border-width: 2px; color: var(--text-primary); transform: scale(1.1); box-shadow: 0 0 10px rgba(109, 40, 217, 0.3); }
-        .footer-buttons { flex-shrink: 0; }
-        .question-block { margin-bottom: 2.2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border-color); }
-        .question-range-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; }
-        .question-instruction { font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); line-height: 1.6; }
+        .navigation-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .navigation-pane { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding: 6px 0; }
+        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -148,16 +128,15 @@
         <div class="modal-content glass-effect">
             <h2>Xác nhận thông tin</h2>
             <p>Đây là một mã dự phòng. Vui lòng nhập họ và tên của bạn để tiếp tục.</p>
-            <form id="name-modal-form" style="margin-bottom: 1rem;">
-                <input type="text" id="name-input" placeholder="Nguyễn Văn A" required style="margin-bottom: 1rem;">
-                <button type="submit" id="name-submit-btn" class="btn btn-main-action">Xác nhận</button>
+            <form id="name-modal-form">
+                <input type="text" id="name-input" placeholder="Nguyễn Văn A" required>
+                <button type="submit" id="name-submit-btn" class="btn btn-main-action" style="margin-top: 1rem;">Xác nhận</button>
             </form>
             <p id="name-error" class="input-error"></p>
         </div>
     </div>
 
-    <div class="exam-container" style="display: none;">
-        </div>
+    <div class="exam-container" style="display: none;"></div>
     
     <div id="result-modal" class="modal">
         <div class="modal-content glass-effect">
@@ -185,18 +164,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // !!! THẦY HÃY DÁN "CHÌA KHÓA" firebaseConfig CỦA DỰ ÁN "ielts-foundation-6ea9d" VÀO ĐÂY !!!
-   const firebaseConfig = {
-  apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-  authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-  projectId: "ielts-foundation-6ea9d",
-  storageBucket: "ielts-foundation-6ea9d.firebasestorage.app",
-  messagingSenderId: "296690693780",
-  appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
-  measurementId: "G-CZD89F0FC3"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
+            authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
+            projectId: "ielts-foundation-6ea9d",
+            storageBucket: "ielts-foundation-6ea9d.appspot.com",
+            messagingSenderId: "296690693780",
+            appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
+            measurementId: "G-CZD89F0FC3"
+        };
         
-        // !!! THẦY HÃY DÁN URL CỦA APPS SCRIPT WEB APP VÀO ĐÂY !!!
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXIqam8Nx05Kn2_TZ7xWd5TkrH7PqdV_Qilwb0RheTVLzwTDxDR4BSOR60mD1BzZY0Fg/exec";
 
         if (!firebase.apps.length) {
@@ -213,8 +190,6 @@
             const codeErrorEl = document.getElementById('code-error');
             const nameModalEl = document.getElementById('name-modal');
             const nameInputEl = document.getElementById('name-input');
-            const nameSubmitBtn = document.getElementById('name-submit-btn');
-            const nameErrorEl = document.getElementById('name-error');
             const nameModalForm = document.getElementById('name-modal-form');
             
             let currentUser = null;
@@ -222,7 +197,6 @@
             let enteredCode = null;
             let isAuthCheckComplete = false;
 
-            // BỘ QUY TẮC VẼ CÂU HỎI ĐẦY ĐỦ (FIX LỖI MÀN HÌNH TRẮNG)
             const RENDERERS = {
                 multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
                 multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
@@ -237,13 +211,23 @@
                 summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
                 matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
             };
-
-            const mainApp = () => {
+            
+            const mainApp = (examData) => {
                 let userAnswers = {};
                 let timerInterval;
                 let isResizing = false;
                 let dragged = null;
                 let questionDataMap = new Map();
+
+                const passageContentEl = document.getElementById('passage-content');
+                const questionsContentEl = document.getElementById('questions-content');
+                const navigationPaneEl = document.getElementById('navigation-pane');
+                const passagePanelEl = document.getElementById('passage-panel');
+                const questionsPanelEl = document.getElementById('questions-panel');
+                const passageSelectEl = document.getElementById('passage-select');
+                const resizerEl = document.getElementById('resizer');
+                const resultModalEl = document.getElementById('result-modal');
+                const modalScoreEl = document.getElementById('modal-score');
 
                 const updateAnswer = (qNum, value) => {
                     const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
@@ -261,8 +245,8 @@
                         if (isCorrect) score++;
                     });
 
-                    document.getElementById('modal-score').textContent = `${score} / ${questionDataMap.size}`;
-                    document.getElementById('result-modal').classList.add('show');
+                    modalScoreEl.textContent = `${score} / ${questionDataMap.size}`;
+                    resultModalEl.classList.add('show');
 
                     if (currentUser && currentTestId && enteredCode) {
                         db.collection("results").add({
@@ -272,7 +256,6 @@
                             totalQuestions: questionDataMap.size,
                             submittedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
-
                         try {
                             await fetch(WEB_APP_URL, {
                                 method: 'POST', mode: 'no-cors',
@@ -283,15 +266,152 @@
                                     studentName: currentUser.displayName || ""
                                 })
                             });
-                            console.log("Yêu cầu cập nhật điểm đã được gửi đến Google Sheet.");
                         } catch (error) {
                             console.error("Lỗi khi gửi điểm đến Google Sheet:", error);
                         }
                     }
                 };
 
-                const initializeExam = (examData) => {
-                    const examContainerHtml = `
+                const showReview = () => {
+                    resultModalEl.classList.remove('show'); document.body.classList.add('review-mode');
+                    document.getElementById('submit-btn').style.display = 'none';
+                    document.getElementById('review-btn').style.display = 'block';
+                    document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+                };
+
+                const showPassageAndQuestions = (passageNum, isInitialLoad = false) => {
+                    document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
+                    document.getElementById(`passage-container-${passageNum}`).style.display = 'block';
+                    document.querySelectorAll(`.question-block[data-passage="${passageNum}"]`).forEach(q => q.style.display = 'block');
+                    document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('hidden', item.dataset.passageNum !== String(passageNum)));
+                    if (isInitialLoad) { passagePanelEl.scrollTop = 0; questionsPanelEl.scrollTop = 0; }
+                };
+
+                const handleMouseMove = (e) => { if (!isResizing) return; const newLeftWidth = e.clientX - examContainerEl.offsetLeft; if (newLeftWidth > 200 && (examContainerEl.offsetWidth - newLeftWidth) > 200) { passagePanelEl.style.width = `${newLeftWidth}px`; } };
+                const stopResizing = () => { isResizing = false; document.removeEventListener('mouseup', stopResizing); document.removeEventListener('mousemove', handleMouseMove); };
+
+                const initializeListeners = () => {
+                    questionsContentEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
+                    questionsContentEl.addEventListener('change', e => {
+                        const target = e.target;
+                        const qNum = target.name?.replace('q', '') || target.dataset.qNum;
+                        if (target.matches('input[type="radio"]')) {
+                            if (target.closest('.tfn-options')) {
+                                target.closest('.tfn-options').querySelectorAll('.tfn-label').forEach(l => l.classList.remove('selected'));
+                                target.parentElement.classList.add('selected');
+                            }
+                            updateAnswer(qNum, target.value);
+                        } else if (target.matches('select')) { updateAnswer(qNum, target.value); }
+                    });
+                    
+                    document.getElementById('passage-select').addEventListener('change', e => showPassageAndQuestions(e.target.value));
+                    document.getElementById('submit-btn').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.add('show'));
+                    document.getElementById('close-modal-btn').addEventListener('click', showReview);
+                    document.getElementById('confirm-submit-yes').addEventListener('click', () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); });
+                    document.getElementById('confirm-submit-no').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.remove('show'));
+                    document.getElementById('review-btn').addEventListener('click', () => window.location.reload());
+                    document.getElementById('resizer').addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
+                };
+
+                document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
+                let navHtml = '';
+                examData.questionBlocks.forEach(block => {
+                    const passageNum = block.passage;
+                    const processItem = item => {
+                        navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
+                        questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
+                    };
+                    if (block.items) { block.items.forEach(processItem); } 
+                    else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
+                        navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
+                        questionDataMap.set(qNum, { answer, type: block.type });
+                    });}
+                });
+                
+                navigationPaneEl.innerHTML = navHtml;
+                passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
+                questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
+                
+                initializeListeners();
+                showPassageAndQuestions(1, true);
+                loadingOverlayEl.style.display = 'none';
+                examContainerEl.style.display = 'flex';
+                
+                let time = examData.timeLimitMinutes * 60;
+                const timerEl = document.getElementById('timer');
+                timerInterval = setInterval(() => {
+                    if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
+                    if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+                }, 1000);
+            };
+
+            const promptForName = () => {
+                return new Promise((resolve, reject) => {
+                    nameModalEl.classList.add('show');
+                    nameInputEl.focus();
+                    nameModalForm.onsubmit = (e) => {
+                        e.preventDefault();
+                        const name = nameInputEl.value.trim();
+                        if (name) {
+                            nameModalEl.classList.remove('show');
+                            resolve(name);
+                        } else {
+                            nameErrorEl.innerText = "Vui lòng nhập họ và tên.";
+                        }
+                    };
+                });
+            };
+            
+            const validateAccessCodeAndStartExam = async (userCode) => {
+                if (!userCode || userCode.length !== 6) return;
+                
+                loadingOverlayEl.style.display = 'flex';
+                loadingOverlayEl.innerText = "Đang xác thực mã...";
+                codeErrorEl.innerText = "";
+                enteredCode = userCode.trim().toUpperCase();
+                const testRef = db.collection("tests").doc(currentTestId);
+
+                try {
+                    const testData = await db.runTransaction(async (transaction) => {
+                        const testDoc = await transaction.get(testRef);
+                        if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
+                        
+                        const data = testDoc.data();
+                        const codes = data.accessCodes || [];
+                        const codeIndex = codes.findIndex(c => c.code === enteredCode);
+
+                        if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
+                        if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
+
+                        const codeInfo = codes[codeIndex];
+                        let studentName = "";
+
+                        if (codeInfo.studentEmail && codeInfo.studentEmail !== currentUser.email) {
+                            throw new Error("Mã này không được gán cho tài khoản của bạn.");
+                        }
+                        
+                        if (!codeInfo.studentEmail) {
+                            codeModalEl.classList.remove('show');
+                            studentName = await promptForName();
+                            currentUser.displayName = studentName;
+                        }
+                        
+                        const updatedCodes = [...codes];
+                        updatedCodes[codeIndex].isUsed = true;
+                        if (studentName) {
+                            updatedCodes[codeIndex].studentEmail = currentUser.email;
+                            updatedCodes[codeIndex].studentName = studentName;
+                        }
+                        transaction.update(testRef, { accessCodes: updatedCodes });
+                        
+                        return data;
+                    });
+                    
+                    codeModalEl.classList.remove('show');
+                    loadingOverlayEl.innerText = "Đang tải đề thi...";
+                    
+                    // Xây dựng giao diện bài thi sau khi xác thực thành công
+                    examContainerEl.innerHTML = `
                         <div class="unified-panel">
                             <header class="exam-header glass-effect">
                                 <div class="header-left"><span>IELTS</span></div>
@@ -306,9 +426,7 @@
                             <footer class="exam-footer glass-effect">
                                 <div class="navigation-controls">
                                     <div class="nav-left-group">
-                                        <select id="passage-select" class="themed-select">
-                                            ${examData.passages.map(p => `<option value="${p.id}">Passage ${p.id}</option>`).join('')}
-                                        </select>
+                                        <select id="passage-select" class="themed-select"></select>
                                         <div id="navigation-pane" class="navigation-pane"></div>
                                     </div>
                                     <div class="footer-buttons">
@@ -318,120 +436,57 @@
                                 </div>
                             </footer>
                         </div>`;
-                    examContainerEl.innerHTML = examContainerHtml;
 
-                    document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
-                    let navHtml = '';
-                    examData.questionBlocks.forEach(block => {
-                        const passageNum = block.passage;
-                        const processItem = item => {
-                            navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
-                            questionDataMap.set(String(item.qNum), { answer: item.answer, type: block.type });
-                        };
-                        if (block.items) { block.items.forEach(processItem); } 
-                        else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
-                            navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
-                            questionDataMap.set(qNum, { answer, type: block.type });
-                        });}
-                    });
-                    
-                    document.getElementById('navigation-pane').innerHTML = navHtml;
-                    document.getElementById('passage-content').innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}" style="display: none;">${p.content}</div>`).join('');
-                    document.getElementById('questions-content').innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}" style="display: none;"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
-                    
-                    initializeListeners(examData);
-                    showPassageAndQuestions("1", true);
+                    mainApp(testData);
+
+                } catch (error) {
                     loadingOverlayEl.style.display = 'none';
-                    examContainerEl.style.display = 'flex';
-                    
-                    let time = examData.timeLimitMinutes * 60;
-                    timerInterval = setInterval(() => {
-                        if (--time < 0) { clearInterval(timerInterval); if(!document.body.classList.contains('review-mode')) submitTest(); return; }
-                        const timerEl = document.getElementById('timer');
-                        if(timerEl) timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
-                    }, 1000);
-                };
-
-                const validateAccessCodeAndStartExam = async (userCode) => {
-                    if (!userCode || userCode.length !== 6) return;
-                    
-                    loadingOverlayEl.style.display = 'flex';
-                    loadingOverlayEl.innerText = "Đang xác thực mã...";
-                    codeErrorEl.innerText = "";
-                    enteredCode = userCode.trim().toUpperCase();
-                    const testRef = db.collection("tests").doc(currentTestId);
-
-                    try {
-                        const testData = await db.runTransaction(async (transaction) => {
-                            const testDoc = await transaction.get(testRef);
-                            if (!testDoc.exists) throw new Error("Bài thi không tồn tại.");
-                            
-                            const data = testDoc.data();
-                            const codes = data.accessCodes || [];
-                            const codeIndex = codes.findIndex(c => c.code === enteredCode);
-
-                            if (codeIndex === -1) throw new Error("Mã làm bài không hợp lệ.");
-                            if (codes[codeIndex].isUsed) throw new Error("Mã này đã được sử dụng.");
-
-                            const codeInfo = codes[codeIndex];
-                            let studentName = "";
-
-                            if (codeInfo.studentEmail && codeInfo.studentEmail !== currentUser.email) {
-                                throw new Error("Mã này không được gán cho tài khoản của bạn.");
-                            }
-                            
-                            if (!codeInfo.studentEmail) { // Mã dự phòng
-                                studentName = await promptForName();
-                                currentUser.displayName = studentName;
-                            }
-                            
-                            const updatedCodes = [...codes];
-                            updatedCodes[codeIndex].isUsed = true;
-                            if (studentName) {
-                                updatedCodes[codeIndex].studentEmail = currentUser.email;
-                                updatedCodes[codeIndex].studentName = studentName;
-                            }
-                            transaction.update(testRef, { accessCodes: updatedCodes });
-                            
-                            return data;
-                        });
-                        
-                        codeModalEl.classList.remove('show');
-                        loadingOverlayEl.innerText = "Đang tải đề thi...";
-                        mainApp(testData); // Gọi lại mainApp với dữ liệu
-                    } catch (error) {
-                        loadingOverlayEl.style.display = 'none';
-                        codeErrorEl.innerText = error.message;
-                        codeInputs.forEach(input => input.value = '');
-                        codeInputs[0].focus();
-                    }
-                };
-
-                auth.onAuthStateChanged(user => {
-                    if (isAuthCheckComplete) return;
-                    if (user) {
-                        isAuthCheckComplete = true;
-                        currentUser = user;
-                        const urlParams = new URLSearchParams(window.location.search);
-                        currentTestId = urlParams.get('testId');
-                        if (currentTestId) {
-                            loadingOverlayEl.style.display = 'none';
-                            codeModalEl.classList.add('show');
-                            codeInputs[0].focus();
-                        } else {
-                            loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
-                            loadingOverlayEl.style.display = 'flex';
-                        }
-                    } else {
-                        isAuthCheckComplete = true;
-                        window.location.href = 'index.html'; 
-                    }
-                });
-
-                // ... các hàm khác ...
+                    codeErrorEl.innerText = error.message;
+                    codeInputs.forEach(input => input.value = '');
+                    codeInputs[0].focus();
+                }
             };
             
-            mainApp(); // Initial call
+            codeInputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    input.value = input.value.toUpperCase();
+                    if (input.value && index < codeInputs.length - 1) { codeInputs[index + 1].focus(); }
+                    const code = Array.from(codeInputs).map(i => i.value).join('');
+                    if (code.length === 6) { validateAccessCodeAndStartExam(code); }
+                });
+                input.addEventListener('keydown', (e) => { if (e.key === "Backspace" && !input.value && index > 0) { codeInputs[index - 1].focus(); } });
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pasteData = e.clipboardData.getData('text').toUpperCase().slice(0, 6);
+                    if (pasteData.length > 0) {
+                        codeInputs.forEach((box, i) => box.value = pasteData[i] || '');
+                        codeInputs[Math.min(pasteData.length, 5)].focus();
+                        if (pasteData.length === 6) { validateAccessCodeAndStartExam(pasteData); }
+                    }
+                });
+            });
+
+            auth.onAuthStateChanged(user => {
+                if (isAuthCheckComplete) return;
+
+                if (user) {
+                    isAuthCheckComplete = true;
+                    currentUser = user;
+                    const urlParams = new URLSearchParams(window.location.search);
+                    currentTestId = urlParams.get('testId');
+                    if (currentTestId) {
+                        loadingOverlayEl.style.display = 'none';
+                        codeModalEl.classList.add('show');
+                        codeInputs[0].focus();
+                    } else {
+                        loadingOverlayEl.innerText = "Lỗi: Không có bài thi nào được chọn.";
+                        loadingOverlayEl.style.display = 'flex';
+                    }
+                } else {
+                    isAuthCheckComplete = true;
+                    window.location.href = 'index.html'; 
+                }
+            });
         });
     </script>
 </body>
