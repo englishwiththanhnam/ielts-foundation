@@ -15,6 +15,9 @@
         .modal { display: none; }
         .modal.is-open { display: flex; }
         .tab-button.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
+        .draggable-item { cursor: grab; }
+        .drop-zone { min-height: 100px; background-color: #f9fafb; border: 2px dashed #d1d5db; }
+        .drop-zone.drag-over { background-color: #eef2ff; border-color: #4f46e5; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -237,7 +240,7 @@ const firebaseConfig = {
                 classHtml += `</tbody></table></div>`;
                 mainContent.innerHTML = classHtml;
             } catch (error) {
-                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học.</p>`;
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học: ${error.message}</p>`;
                 console.error(error);
             }
         }
@@ -294,7 +297,6 @@ const firebaseConfig = {
                     <nav class="flex space-x-4" aria-label="Tabs">
                         <button id="tab-curriculums" class="tab-button active px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Quản Lý Giáo Trình</button>
                         <button id="tab-vocab" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Kho Từ Vựng</button>
-                        <button id="tab-tests" class="tab-button px-3 py-2 font-medium text-sm rounded-md border-b-2 border-transparent">Kho Bài Kiểm Tra</button>
                     </nav>
                 </div>
                 <div id="content-display"></div>
@@ -304,10 +306,77 @@ const firebaseConfig = {
 
         async function renderCurriculumTab() {
             document.getElementById('content-display').innerHTML = `<p>Đang tải giáo trình...</p>`;
-            document.getElementById('content-display').innerHTML = `
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold mb-2">Tính năng đang được phát triển</h3>
-                    <p>Tại đây, bạn sẽ có thể tạo và sắp xếp các học phần vào từng giáo trình.</p>
+            const curriculumsSnap = await db.collection('curriculums').get();
+            let html = `
+                <div class="mb-6 bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold mb-2">Tạo Giáo Trình Mới</h3>
+                    <div class="flex gap-4">
+                        <input id="new-curriculum-name" type="text" placeholder="Tên giáo trình..." class="flex-grow p-2 border rounded-md">
+                        <button id="add-curriculum-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo</button>
+                    </div>
+                </div>
+                <div class="space-y-4">`;
+
+            curriculumsSnap.forEach(doc => {
+                const curriculum = doc.data();
+                html += `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold">${curriculum.name}</h3>
+                            <button class="manage-curriculum-btn text-indigo-600 hover:underline" data-id="${doc.id}">Quản lý học phần</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            document.getElementById('content-display').innerHTML = html;
+        }
+        
+        async function renderCurriculumDetailView(curriculumId) {
+            pageTitle.textContent = 'Chỉnh sửa Giáo trình';
+            mainContent.innerHTML = `<p>Đang tải chi tiết...</p>`;
+            
+            const [curriculumDoc, vocabSnap, testsSnap] = await Promise.all([
+                db.collection('curriculums').doc(curriculumId).get(),
+                db.collection('vocab_sets').where('isSupplementary', '==', false).get(),
+                db.collection('tests').where('isSupplementary', '==', false).get()
+            ]);
+
+            const curriculum = curriculumDoc.data();
+            const currentModuleIds = new Set((curriculum.modules || []).map(m => m.contentId));
+
+            const availableModules = [];
+            vocabSnap.forEach(doc => availableModules.push({ type: 'vocab', id: doc.id, ...doc.data() }));
+            // testsSnap.forEach(doc => availableModules.push({ type: 'test', id: doc.id, ...doc.data() }));
+
+            let curriculumModulesHtml = (curriculum.modules || []).map(module => `
+                <div class="draggable-item bg-indigo-100 p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${module.contentId}" data-title="${module.title}">
+                    <i class="fas fa-grip-vertical mr-2 text-gray-400"></i> ${module.title}
+                </div>
+            `).join('');
+
+            let availableModulesHtml = availableModules.filter(m => !currentModuleIds.has(m.id)).map(module => `
+                 <div class="draggable-item bg-white p-2 rounded border" draggable="true" data-type="${module.type}" data-id="${module.id}" data-title="${module.title}">
+                    <i class="fas fa-plus mr-2 text-green-500"></i> ${module.title}
+                </div>
+            `).join('');
+            
+            mainContent.innerHTML = `
+                <button id="back-to-content-btn" class="mb-4 bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">&larr; Quay lại</button>
+                <h2 class="text-2xl font-bold mb-4">${curriculum.name}</h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold mb-2">Học phần trong Giáo trình</h3>
+                        <div id="curriculum-modules" class="drop-zone p-4 rounded-lg space-y-2" data-id="${curriculumId}">
+                            ${curriculumModulesHtml}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-2">Học phần gốc có sẵn</h3>
+                        <div id="available-modules" class="drop-zone p-4 rounded-lg space-y-2">
+                            ${availableModulesHtml}
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -362,11 +431,9 @@ const firebaseConfig = {
             `;
         }
 
-        // --- EVENT LISTENERS ---
+        // --- GLOBAL EVENT LISTENER ---
+        let draggedItem = null;
         mainContent.addEventListener('click', async (e) => {
-            if (e.target.id === 'show-add-student-modal-btn') {
-                addStudentModal.classList.add('is-open');
-            }
             if (e.target.id === 'add-class-btn') {
                 const newClassName = document.getElementById('new-class-name').value;
                 const curriculumId = document.getElementById('new-class-curriculum').value;
@@ -407,8 +474,68 @@ const firebaseConfig = {
                     e.target.checked = !isChecked;
                 }
             }
+            if (e.target.id === 'add-curriculum-btn') {
+                const name = document.getElementById('new-curriculum-name').value;
+                if (!name.trim()) return alert('Vui lòng nhập tên giáo trình.');
+                await db.collection('curriculums').add({ name: name, modules: [] });
+                await renderCurriculumTab();
+            }
+            if (e.target.classList.contains('manage-curriculum-btn')) {
+                await renderCurriculumDetailView(e.target.dataset.id);
+            }
+            if (e.target.id === 'back-to-content-btn') {
+                await renderContentManagement();
+            }
+             if (e.target.id === 'show-add-student-modal-btn') {
+                addStudentModal.classList.add('is-open');
+            }
         });
 
+        mainContent.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('draggable-item')) {
+                draggedItem = e.target;
+                setTimeout(() => e.target.classList.add('opacity-50'), 0);
+            }
+        });
+        mainContent.addEventListener('dragend', (e) => {
+            if (draggedItem) {
+                draggedItem.classList.remove('opacity-50');
+                draggedItem = null;
+            }
+        });
+        mainContent.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        });
+        mainContent.addEventListener('dragleave', (e) => {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.remove('drag-over');
+            }
+        });
+        mainContent.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone && draggedItem) {
+                dropZone.classList.remove('drag-over');
+                dropZone.appendChild(draggedItem);
+
+                const curriculumId = document.getElementById('curriculum-modules').dataset.id;
+                const modulesInCurriculum = Array.from(document.querySelectorAll('#curriculum-modules .draggable-item'));
+                
+                const newModulesArray = modulesInCurriculum.map(item => ({
+                    contentId: item.dataset.id,
+                    title: item.dataset.title,
+                    type: item.dataset.type
+                }));
+
+                await db.collection('curriculums').doc(curriculumId).update({ modules: newModulesArray });
+            }
+        });
+        
         document.getElementById('cancel-add-student').addEventListener('click', () => {
             addStudentModal.classList.remove('is-open');
         });
