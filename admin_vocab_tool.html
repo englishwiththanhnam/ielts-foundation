@@ -2,46 +2,88 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Công cụ Quản trị Từ vựng</title>
+    <title>Công cụ Quản trị Từ vựng v4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Be Vietnam Pro', sans-serif; } </style>
+    <style> 
+        body { font-family: 'Be Vietnam Pro', sans-serif; } 
+        textarea { resize: vertical; }
+    </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
-        <h1 class="text-3xl font-bold text-indigo-600 mb-2">Công cụ Quản trị Từ vựng</h1>
-        <p class="text-gray-600 mb-8">Tạo và tải các bộ từ vựng lên hệ thống một cách dễ dàng.</p>
+    <div class="max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+        <h1 class="text-3xl font-bold text-indigo-600 mb-2">Công cụ Tạo Học Phần Từ Vựng</h1>
+        <p class="text-gray-600 mb-8">Tạo học phần gốc cho giáo trình hoặc học phần bổ sung.</p>
 
         <div class="space-y-6">
             <div>
                 <label for="firebaseConfig" class="block text-sm font-medium text-gray-700 mb-1">1. Dán Firebase Config:</label>
-                <textarea id="firebaseConfig" rows="5" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="const firebaseConfig = {...};"></textarea>
+                <textarea id="firebaseConfig" rows="4" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="const firebaseConfig = {...};"></textarea>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="vocabSetId" class="block text-sm font-medium text-gray-700 mb-1">2. ID của Bộ từ vựng (duy nhất):</label>
-                    <input type="text" id="vocabSetId" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: unit-1-family">
+                    <label for="module-id" class="block text-sm font-medium text-gray-700 mb-1">2. ID của Học phần (duy nhất, viết liền, không dấu):</label>
+                    <input type="text" id="module-id" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: unit-1-family">
                 </div>
                 <div>
-                    <label for="vocabSetTitle" class="block text-sm font-medium text-gray-700 mb-1">3. Tiêu đề của Bộ từ vựng:</label>
-                    <input type="text" id="vocabSetTitle" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Unit 1: Family">
+                    <label for="module-title" class="block text-sm font-medium text-gray-700 mb-1">3. Tiêu đề của Học phần:</label>
+                    <input type="text" id="module-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Unit 1: Family Vocab">
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="vocabCsv" class="block text-sm font-medium text-gray-700 mb-1">4. Dán nội dung từ vựng (ngăn cách bằng TAB):</label>
-                    <textarea id="vocabCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Word	Type	Pronunciation	Meaning..."></textarea>
+            <div class="border-t pt-6">
+                 <h2 class="text-xl font-semibold text-gray-800 mb-4">4. Chọn Loại Học Phần</h2>
+                 <div class="flex items-center space-x-6 mb-4 bg-gray-50 p-4 rounded-lg">
+                    <label class="flex items-center">
+                        <input type="radio" name="moduleType" value="core" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" checked>
+                        <span class="ml-2 text-gray-700 font-medium">Học phần Gốc (để thêm vào Giáo trình)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="moduleType" value="supplementary" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                        <span class="ml-2 text-gray-700 font-medium">Học phần Bổ sung</span>
+                    </label>
+                 </div>
+            </div>
+
+            <div class="border-t pt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">5. Dán dữ liệu (Từng cột một)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="col-word" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Word'</label>
+                        <textarea id="col-word" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="col-type" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Type'</label>
+                        <textarea id="col-type" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="col-pronunciation" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Pronunciation'</label>
+                        <textarea id="col-pronunciation" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="col-meaning-vocab" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Meaning'</label>
+                        <textarea id="col-meaning-vocab" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <label for="structureCsv" class="block text-sm font-medium text-gray-700 mb-1">5. Dán nội dung cấu trúc (ngăn cách bằng TAB):</label>
-                    <textarea id="structureCsv" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Cấu trúc / Idiom / Cụm từ	Ý nghĩa..."></textarea>
+            </div>
+
+            <div class="border-t pt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">6. Dán dữ liệu Cấu trúc (Từng cột một)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="col-structure" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Cấu trúc / Idiom / Cụm từ'</label>
+                        <textarea id="col-structure" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="col-meaning-structure" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Ý nghĩa'</label>
+                        <textarea id="col-meaning-structure" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
                 </div>
             </div>
 
             <button id="process-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all">
-                Xử lý và Tải lên Firebase
+                Tạo Học Phần
             </button>
 
             <div id="status" class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm">
@@ -70,35 +112,45 @@
             }
         }
 
-        // [FIX] Hàm parseData được nâng cấp để đọc dữ liệu ngăn cách bằng TAB (TSV)
-        function parseData(tsvText) {
-            const lines = tsvText.trim().split(/\r\n|\n/);
-            if (lines.length < 2) return [];
+        function processPastedColumns() {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = 'Đang xử lý dữ liệu từ các cột...';
 
-            const headerLine = lines.shift();
-            const headers = headerLine.split('\t').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+            const words = document.getElementById('col-word').value.trim().split('\n');
+            const types = document.getElementById('col-type').value.trim().split('\n');
+            const pronunciations = document.getElementById('col-pronunciation').value.trim().split('\n');
+            const meaningsVocab = document.getElementById('col-meaning-vocab').value.trim().split('\n');
+
+            const structures = document.getElementById('col-structure').value.trim().split('\n');
+            const meaningsStructure = document.getElementById('col-meaning-structure').value.trim().split('\n');
+
+            if (words.length > 1 && (words.length !== types.length || words.length !== pronunciations.length || words.length !== meaningsVocab.length)) {
+                throw new Error("Số dòng trong các cột từ vựng không khớp nhau! Vui lòng kiểm tra lại.");
+            }
+            if (structures.length > 1 && (structures.length !== meaningsStructure.length)) {
+                throw new Error("Số dòng trong các cột cấu trúc không khớp nhau! Vui lòng kiểm tra lại.");
+            }
+
+            const vocabData = words[0] === '' ? [] : words.map((word, index) => ({
+                word: word.trim(),
+                type: (types[index] || '').trim(),
+                pronunciation: (pronunciations[index] || '').trim(),
+                meaning: (meaningsVocab[index] || '').trim(),
+            }));
+
+            const structureData = structures[0] === '' ? [] : structures.map((structure, index) => ({
+                'cấu trúc / idiom / cụm từ': structure.trim(),
+                'ý nghĩa': (meaningsStructure[index] || '').trim(),
+            }));
             
-            const rows = lines.map(line => {
-                const row = {};
-                const values = line.split('\t');
-                
-                headers.forEach((header, index) => {
-                    let value = (values[index] || '').trim();
-                    if (value.startsWith('"') && value.endsWith('"')) {
-                        value = value.substring(1, value.length - 1);
-                    }
-                    row[header] = value.replace(/""/g, '"'); 
-                });
-                return row;
-            });
-
-            return rows;
+            statusEl.innerHTML += `<br>✅ Đã đọc thành công ${vocabData.length} từ và ${structureData.length} cấu trúc.`;
+            return { vocabData, structureData };
         }
 
 
         function processDataSmart(vocabData, structureData) {
             const statusEl = document.getElementById('status');
-            statusEl.innerHTML += "<br>� Bắt đầu liên kết cấu trúc thông minh...";
+            statusEl.innerHTML += "<br>🧠 Bắt đầu liên kết cấu trúc thông minh...";
 
             const vocabWords = vocabData.map(v => v.word);
             let structuresWithRootWord = [];
@@ -150,39 +202,41 @@
         document.getElementById('process-btn').addEventListener('click', async () => {
             if (!initializeFirebase()) return;
 
-            const vocabSetId = document.getElementById('vocabSetId').value;
-            const vocabSetTitle = document.getElementById('vocabSetTitle').value;
-            const vocabCsv = document.getElementById('vocabCsv').value;
-            const structureCsv = document.getElementById('structureCsv').value;
+            const moduleId = document.getElementById('module-id').value;
+            const moduleTitle = document.getElementById('module-title').value;
+            const moduleType = document.querySelector('input[name="moduleType"]:checked').value;
             const statusEl = document.getElementById('status');
 
-            if (!vocabSetId || !vocabSetTitle || !vocabCsv || !structureCsv) {
-                alert("Vui lòng điền đầy đủ tất cả các trường.");
+            if (!moduleId || !moduleTitle) {
+                alert("Vui lòng điền ID và Tiêu đề của học phần.");
                 return;
             }
 
             try {
-                statusEl.textContent = 'Bắt đầu xử lý dữ liệu...';
-                const vocabData = parseData(vocabCsv);
-                const structureData = parseData(structureCsv);
+                const { vocabData, structureData } = processPastedColumns();
                 
                 if (vocabData.length === 0) {
-                    throw new Error("Không đọc được dữ liệu từ vựng. Vui lòng kiểm tra lại định dạng (ngăn cách bằng TAB).");
+                    throw new Error("Không có dữ liệu từ vựng. Vui lòng dán ít nhất một cột 'Word'.");
                 }
 
                 const processedWords = processDataSmart(vocabData, structureData);
                 
                 const finalDataObject = {
-                    title: vocabSetTitle,
+                    title: moduleTitle,
+                    type: 'vocab',
+                    isSupplementary: moduleType === 'supplementary',
                     words: processedWords
                 };
 
-                statusEl.innerHTML += `<br>Đang tải bộ từ vựng '${vocabSetId}' lên Firestore...`;
+                // Logic lưu mới: Dựa vào loại học phần để chọn collection
+                let collectionName = moduleType === 'core' ? 'vocab_sets' : 'supplementary_modules';
                 
-                await db.collection("vocab_sets").doc(vocabSetId).set(finalDataObject);
+                statusEl.innerHTML += `<br>Đang tải học phần '${moduleId}' lên kho '${collectionName}'...`;
+                
+                await db.collection(collectionName).doc(moduleId).set(finalDataObject);
 
-                statusEl.innerHTML += `<br>🎉 **THÀNH CÔNG!** Đã tải bộ từ vựng lên Firestore.`;
-                alert('Tải lên thành công!');
+                statusEl.innerHTML += `<br>🎉 **THÀNH CÔNG!** Đã tạo học phần.`;
+                alert('Tạo học phần thành công!');
 
             } catch (error) {
                 statusEl.textContent = `Lỗi: ${error.message}`;
@@ -192,4 +246,3 @@
     </script>
 </body>
 </html>
-�
