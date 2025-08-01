@@ -62,7 +62,27 @@
 
     <!-- Modal for adding student -->
     <div id="add-student-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full items-center justify-center">
-        <!-- ... (Modal content) ... -->
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Tạo Tài Khoản Học Sinh Mới</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="student-name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="student-name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="student-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="student-email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="student-password" class="block text-sm font-medium text-gray-700">Mật khẩu ban đầu</label>
+                    <input type="password" id="student-password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancel-add-student" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                <button id="confirm-add-student" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Tạo Tài Khoản</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -89,13 +109,15 @@ const firebaseConfig = {
         const mainContent = document.getElementById('main-content');
         const adminName = document.getElementById('admin-name');
         const logoutButton = document.getElementById('logout-button');
+        const addStudentModal = document.getElementById('add-student-modal');
         
-           auth.onAuthStateChanged(user => {
+        // --- AUTHENTICATION & NAVIGATION LOGIC ---
+        auth.onAuthStateChanged(user => {
             if (user) {
                 db.collection('users').doc(user.uid).get().then(doc => {
                     if (doc.exists && doc.data().role === 'admin') {
                         adminName.textContent = user.displayName || user.email;
-                        renderDashboard();
+                        renderDashboard(); // Mặc định hiển thị Dashboard khi tải trang
                     } else {
                         auth.signOut();
                         window.location.href = 'login.html';
@@ -125,15 +147,13 @@ const firebaseConfig = {
             });
         });
 
-
         // --- MODULE RENDERING FUNCTIONS ---
 
-   async function renderDashboard() {
+        async function renderDashboard() {
             pageTitle.textContent = 'Dashboard';
             mainContent.innerHTML = `<p>Đang tải thống kê...</p>`;
             
             try {
-                // [FIX] Tải tất cả user và lọc ở client
                 const [usersSnap, classesSnap, assignmentsSnap] = await Promise.all([
                     db.collection('users').get(),
                     db.collection('classes').get(),
@@ -168,56 +188,61 @@ const firebaseConfig = {
             pageTitle.textContent = 'Quản Lý Lớp Học';
             mainContent.innerHTML = `<p>Đang tải...</p>`;
             
-            const [classesSnap, curriculumsSnap] = await Promise.all([
-                db.collection('classes').get(),
-                db.collection('curriculums').get()
-            ]);
+            try {
+                const [classesSnap, curriculumsSnap] = await Promise.all([
+                    db.collection('classes').get(),
+                    db.collection('curriculums').get()
+                ]);
 
-            const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
-            let classHtml = `
-                <div class="mb-6 bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold mb-2">Tạo Lớp Mới</h3>
-                    <div class="flex gap-4">
-                        <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="flex-grow p-2 border rounded-md">
-                        <select id="new-class-curriculum" class="p-2 border rounded-md">
-                            <option value="">-- Chọn giáo trình --</option>
-                            ${curriculumOptions}
-                        </select>
-                        <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp</button>
+                let classHtml = `
+                    <div class="mb-6 bg-white p-4 rounded-lg shadow">
+                        <h3 class="font-bold mb-2">Tạo Lớp Mới</h3>
+                        <div class="flex flex-wrap gap-4">
+                            <input id="new-class-name" type="text" placeholder="Nhập tên lớp mới..." class="flex-grow p-2 border rounded-md">
+                            <select id="new-class-curriculum" class="p-2 border rounded-md">
+                                <option value="">-- Chọn giáo trình --</option>
+                                ${curriculumOptions}
+                            </select>
+                            <button id="add-class-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Tạo Lớp</button>
+                        </div>
                     </div>
-                </div>
-                <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-800 text-white">
-                            <tr>
-                                <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
-                                <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Giáo trình</th>
-                                <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-gray-700">`;
-            
-            classesSnap.forEach(doc => {
-                const classData = doc.data();
-                const curriculum = curriculums.find(c => c.id === classData.curriculumId);
-                classHtml += `
-                    <tr>
-                        <td class="w-2/5 text-left py-3 px-4">${classData.className}</td>
-                        <td class="w-2/5 text-left py-3 px-4">${curriculum ? curriculum.name : 'Chưa gán'}</td>
-                        <td class="text-left py-3 px-4">
-                            <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
-                        </td>
-                    </tr>
-                `;
-            });
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-800 text-white">
+                                <tr>
+                                    <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Tên Lớp</th>
+                                    <th class="w-2/5 text-left py-3 px-4 uppercase font-semibold text-sm">Giáo trình</th>
+                                    <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">`;
+                
+                classesSnap.forEach(doc => {
+                    const classData = doc.data();
+                    const curriculum = curriculums.find(c => c.id === classData.curriculumId);
+                    classHtml += `
+                        <tr>
+                            <td class="w-2/5 text-left py-3 px-4">${classData.className}</td>
+                            <td class="w-2/5 text-left py-3 px-4">${curriculum ? curriculum.name : 'Chưa gán'}</td>
+                            <td class="text-left py-3 px-4">
+                                <button class="text-red-500 hover:text-red-700 delete-class-btn" data-id="${doc.id}">Xóa</button>
+                            </td>
+                        </tr>
+                    `;
+                });
 
-            classHtml += `</tbody></table></div>`;
-            mainContent.innerHTML = classHtml;
+                classHtml += `</tbody></table></div>`;
+                mainContent.innerHTML = classHtml;
+            } catch (error) {
+                mainContent.innerHTML = `<p class="text-red-500">Lỗi khi tải danh sách lớp học.</p>`;
+                console.error(error);
+            }
         }
 
- async function renderStudentManagement() {
+        async function renderStudentManagement() {
             pageTitle.textContent = 'Quản Lý Học Sinh';
             mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
 
@@ -262,7 +287,6 @@ const firebaseConfig = {
             }
         }
 
-        // [NEW] MODULE: CONTENT MANAGEMENT
         async function renderContentManagement() {
             pageTitle.textContent = 'Quản Lý Nội Dung';
             mainContent.innerHTML = `
@@ -275,13 +299,11 @@ const firebaseConfig = {
                 </div>
                 <div id="content-display"></div>
             `;
-            // Mặc định hiển thị tab giáo trình
             await renderCurriculumTab();
         }
 
         async function renderCurriculumTab() {
             document.getElementById('content-display').innerHTML = `<p>Đang tải giáo trình...</p>`;
-            // Logic để hiển thị, tạo, sửa, xóa giáo trình sẽ được thêm vào đây
             document.getElementById('content-display').innerHTML = `
                 <div class="bg-white p-4 rounded-lg shadow">
                     <h3 class="font-bold mb-2">Tính năng đang được phát triển</h3>
@@ -328,7 +350,7 @@ const firebaseConfig = {
             document.getElementById('content-display').innerHTML = vocabHtml;
         }
 
-         function renderAssignmentManagement() {
+        function renderAssignmentManagement() {
             pageTitle.textContent = 'Quản Lý Bài Tập';
             mainContent.innerHTML = `
                 <div class="grid grid-cols-1 gap-6">
@@ -346,13 +368,14 @@ const firebaseConfig = {
                 addStudentModal.classList.add('is-open');
             }
             if (e.target.id === 'add-class-btn') {
-                 const newClassName = document.getElementById('new-class-name').value;
-                if (newClassName.trim() === '') {
-                    alert('Vui lòng nhập tên lớp.');
+                const newClassName = document.getElementById('new-class-name').value;
+                const curriculumId = document.getElementById('new-class-curriculum').value;
+                if (!newClassName.trim() || !curriculumId) {
+                    alert('Vui lòng nhập tên lớp và chọn giáo trình.');
                     return;
                 }
                 try {
-                    await db.collection('classes').add({ className: newClassName });
+                    await db.collection('classes').add({ className: newClassName, curriculumId: curriculumId });
                     alert('Tạo lớp thành công!');
                     renderClassManagement();
                 } catch (error) {
@@ -362,27 +385,17 @@ const firebaseConfig = {
             }
             if (e.target.classList.contains('delete-class-btn')) {
                 const classId = e.target.dataset.id;
-                if (confirm(`Bạn có chắc chắn muốn xóa lớp học này không?`)) {
-                    try {
-                        await db.collection('classes').doc(classId).delete();
-                        alert('Xóa lớp thành công!');
-                        renderClassManagement();
-                    } catch (error) {
-                        alert('Đã có lỗi xảy ra.');
-                        console.error(error);
-                    }
+                if (confirm('Bạn có chắc chắn muốn xóa lớp học này không?')) {
+                    await db.collection('classes').doc(classId).delete();
+                    renderClassManagement();
                 }
             }
-        });
-            // [NEW] Chuyển tab trong Quản lý Nội dung
             if (e.target.classList.contains('tab-button')) {
                 document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 if (e.target.id === 'tab-curriculums') await renderCurriculumTab();
                 if (e.target.id === 'tab-vocab') await renderVocabInventoryTab();
-                // if (e.target.id === 'tab-tests') await renderTestInventoryTab();
             }
-            // [NEW] Cập nhật trạng thái học phần bổ sung
             if (e.target.classList.contains('supplementary-toggle')) {
                 const docId = e.target.dataset.id;
                 const isChecked = e.target.checked;
@@ -391,10 +404,17 @@ const firebaseConfig = {
                 } catch (error) {
                     console.error("Lỗi cập nhật:", error);
                     alert("Có lỗi xảy ra, không thể cập nhật.");
-                    e.target.checked = !isChecked; // Hoàn tác lại nếu lỗi
+                    e.target.checked = !isChecked;
                 }
             }
-        ;
+        });
+
+        document.getElementById('cancel-add-student').addEventListener('click', () => {
+            addStudentModal.classList.remove('is-open');
+        });
+        document.getElementById('confirm-add-student').addEventListener('click', () => {
+            alert("Chức năng này cần được thiết lập trên máy chủ (Firebase Functions) để đảm bảo bảo mật. Vui lòng tạo tài khoản trực tiếp trên Firebase Authentication Console và sau đó thêm thông tin vào Firestore.");
+        });
 
     </script>
 </body>
