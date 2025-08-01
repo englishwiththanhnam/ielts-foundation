@@ -117,11 +117,12 @@ const firebaseConfig = {
                     const isCompleted = progressData.completedModules && progressData.completedModules[module.url] === true;
                     const moduleEl = document.createElement('a');
                     
-                    // [FIX] Sửa lại cách tạo URL để giữ nguyên đường dẫn tương đối
-                    // URL gốc đã có dạng "vocab_app.html?vocabId=unit1"
-                    // Chúng ta chỉ cần thêm "assignmentId" vào
-                    const finalUrl = `${module.url}&assignmentId=${assignmentId}`;
-                    moduleEl.href = finalUrl;
+                    // [FIX] Sửa lại cách tạo URL để giữ nguyên đường dẫn thư mục repository
+                    // Bằng cách này, nó sẽ tạo URL dựa trên vị trí của file assignment.html hiện tại
+                    // Ví dụ: .../ielts-foundation/assignment.html -> .../ielts-foundation/vocab_app.html
+                    const moduleUrl = new URL(module.url, window.location.href);
+                    moduleUrl.searchParams.append('assignmentId', assignmentId);
+                    moduleEl.href = moduleUrl.href;
                     
                     moduleEl.className = 'module-link flex items-center justify-between p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-indigo-500 transition-all';
                     
@@ -152,11 +153,15 @@ const firebaseConfig = {
             }
         }
 
+        function main() {
+            // Logic chính sẽ được gọi từ onAuthStateChanged
+        }
+
+        auth.onAuthStateChanged(main);
+
         logoutButton.addEventListener('click', () => {
             auth.signOut().then(() => { window.location.href = 'index.html'; });
         });
-
-        main();
     </script>
 </body>
 </html>
