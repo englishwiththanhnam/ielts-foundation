@@ -25,7 +25,7 @@
 
     <main class="container mx-auto px-6 py-8">
         <div id="loading-state" class="text-center">
-            <p class="text-lg text-gray-600">Đang tải chi tiết bài tập...</p>
+            <p class="text-lg text-gray-600">Đang xác thực tài khoản...</p>
         </div>
 
         <div id="main-content" class="hidden">
@@ -54,10 +54,8 @@ const firebaseConfig = {
   measurementId: "G-CZD89F0FC3"
 };
         
-        // [FIX] Thêm đoạn mã kiểm tra cấu hình Firebase
-        if (!firebaseConfig || firebaseConfig.apiKey === "...") {
+        if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "...") {
             document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold text-xl">LỖI CẤU HÌNH: Bạn chưa dán firebaseConfig vào file `assignment.html`. Vui lòng mở file và điền đầy đủ thông tin.</p>';
-            // Dừng thực thi nếu chưa có config
             throw new Error("Firebase config is missing in assignment.html");
         }
         
@@ -76,8 +74,19 @@ const firebaseConfig = {
         const modulesList = document.getElementById('modules-list');
         const logoutButton = document.getElementById('logout-button');
 
+        // [FIX] Thêm biến cờ để đảm bảo logic chỉ chạy một lần sau khi xác thực xong
+        let authCheckCompleted = false;
+
         auth.onAuthStateChanged(async user => {
+            // Chỉ xử lý lần đầu tiên listener này được gọi để xác định trạng thái ban đầu
+            if (authCheckCompleted) {
+                return;
+            }
+            authCheckCompleted = true;
+
             if (user) {
+                // Người dùng đã đăng nhập
+                loadingState.textContent = 'Đang tải chi tiết bài tập...';
                 userDisplayName.textContent = user.displayName || user.email;
                 const urlParams = new URLSearchParams(window.location.search);
                 const assignmentId = urlParams.get('id');
@@ -91,7 +100,7 @@ const firebaseConfig = {
                 mainContent.classList.remove('hidden');
                 loadingState.classList.add('hidden');
             } else {
-                // Chỉ chuyển hướng nếu không có người dùng nào được xác thực
+                // Firebase đã xác nhận người dùng CHƯA đăng nhập
                 window.location.href = 'login.html';
             }
         });
@@ -115,7 +124,6 @@ const firebaseConfig = {
                     const isCompleted = progressData.completedModules && progressData.completedModules[module.url] === true;
                     const moduleEl = document.createElement('a');
                     
-                    // Gắn assignmentId vào URL của module để các trang con có thể sử dụng
                     const moduleUrl = new URL(module.url, window.location.origin);
                     moduleUrl.searchParams.append('assignmentId', assignmentId);
                     
