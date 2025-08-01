@@ -289,17 +289,15 @@ const firebaseConfig = {
             pageTitle.textContent = 'Chỉnh sửa Giáo trình';
             mainContent.innerHTML = `<p>Đang tải chi tiết...</p>`;
             try {
-                // [FIX] Tải tất cả học phần gốc, sau đó lọc bằng JS
                 const [curriculumDoc, allCoreModulesSnap] = await Promise.all([
                     db.collection('curriculums').doc(curriculumId).get(),
-                    db.collection('vocab_sets').get() // Tải tất cả
+                    db.collection('vocab_sets').get()
                 ]);
 
                 const curriculum = curriculumDoc.data();
                 const curriculumModules = await db.collection('curriculums').doc(curriculumId).collection('modules').get();
                 const currentModuleIds = new Set(curriculumModules.docs.map(doc => doc.id));
 
-                // Lọc ra học phần gốc bằng JS
                 const availableModules = allCoreModulesSnap.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
                     .filter(module => module.isSupplementary === false);
