@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Reading - Final Version</title>
+    <style>
+        html {
+            font-size: 15px;
+        }
+        :root {
+            --panel-bg-color: rgba(255, 255, 255, 1);
+            --glass-bg-color: rgba(255, 255, 255, 0.6);
+            --glass-border-color: rgba(237, 242, 255, 0.9);
+            --shadow-color: rgba(67, 56, 202, 0.15);
+            --primary-accent: #6d28d9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --app-bg-start: #f5f7ff;
+            --app-bg-end: #e0e7ff;
+            --correct-bg: #dcfce7;
+            --correct-border: #22c55e;
+            --correct-text: #15803d;
+            --incorrect-bg: #fee2e2;
+            --incorrect-border: #ef4444;
+            --incorrect-text: #b91c1c;
+            --transition-fast: all 0.2s ease-out;
+            --transition-medium: all 0.3s ease-out;
+            --fade-duration: 150ms;
+        }
+        body.dark {
+            --panel-bg-color: rgba(30, 41, 59, 1);
+            --glass-bg-color: rgba(29, 39, 58, 0.6);
+            --glass-border-color: rgba(255, 255, 255, 0.15);
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            --primary-accent: #a78bfa;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --app-bg-start: #0f172a;
+            --app-bg-end: #1e293b;
+            --correct-bg: #052e16;
+            --correct-border: #16a34a;
+            --correct-text: #a7f3d0;
+            --incorrect-bg: #450a0a;
+            --incorrect-border: #dc2626;
+            --incorrect-text: #fecaca;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--app-bg-start);
+            background-image: linear-gradient(135deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
+            color: var(--text-primary);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+            margin: 0;
+        }
+        .background-shapes { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .shape { position: absolute; border-radius: 50%; filter: blur(80px); transition: opacity 0.5s ease; }
+        .shape1 { width: 350px; height: 350px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); top: 5%; left: 5%; animation: float 28s infinite alternate ease-in-out; }
+        .shape2 { width: 280px; height: 280px; background: linear-gradient(135deg, #14b8a6, #67e8f9); bottom: 10%; right: 10%; animation: float 32s infinite alternate ease-in-out; }
+        body.dark .shape { opacity: 0.4; }
+        @keyframes float {
+            from { transform: translateY(20px) scale(1) rotate(0deg); }
+            to { transform: translateY(-20px) scale(1.05) rotate(20deg); }
+        }
+        .exam-container { width: 100%; height: 100%; max-width: 1800px; position: relative; z-index: 1; display: flex; }
+        .unified-panel { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 16px; overflow: hidden; background: var(--panel-bg-color); border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color); }
+        .glass-effect { background: var(--glass-bg-color); backdrop-filter: blur(8px) saturate(120%); -webkit-backdrop-filter: blur(8px) saturate(120%); }
+        .exam-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; flex-shrink: 0; position: relative; border-bottom: 1px solid var(--glass-border-color); z-index: 10; }
+        .header-left span { font-weight: 700; font-size: 1.5rem; color: var(--text-primary); }
+        .header-center { font-weight: 600; font-size: 1.25rem; color: var(--text-secondary); }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        #timer { background-color: #dc3545; color: white; padding: 8px 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); }
+        .settings-icon { width: 24px; height: 24px; cursor: pointer; fill: var(--text-primary); transition: var(--transition-fast); }
+        .settings-icon:hover { fill: var(--primary-accent); }
+        .settings-dropdown { 
+            position: absolute; top: 60px; right: 20px; z-index: 1002;
+            padding: 10px; border-radius: 12px; background: var(--panel-bg-color);
+            border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color);
+            opacity: 0; transform: translateY(-10px); pointer-events: none;
+            transition: opacity var(--transition-fast), transform var(--transition-fast);
+        }
+        .settings-dropdown.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .settings-group { margin-bottom: 10px; }
+        .settings-group label { font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-primary); }
+        .main-content { display: flex; flex-grow: 1; overflow: hidden; background: var(--panel-bg-color); position: relative; }
+        .panel { padding: 24px; overflow-y: auto; height: 100%; box-sizing: border-box; position: relative; z-index: 1; transition: opacity var(--fade-duration) ease-in-out; }
+        .panel.fading { opacity: 0; }
+        .passage-panel { width: 50%; }
+        .questions-panel { width: 50%; }
+        .passage-header { margin-bottom: 2rem; }
+        .passage-number { text-transform: uppercase; font-weight: 600; color: var(--text-secondary); font-size: 0.9em; margin-bottom: 1rem; }
+        .passage-instruction { color: var(--text-primary); margin-bottom: 2rem; font-size: 1em; }
+        .passage-title { font-size: 2em; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
+        .passage-subtitle { font-style: italic; font-size: 1.1em; color: var(--text-secondary); margin-bottom: 2rem; }
+        .passage-content p { line-height: 1.7; text-align: justify; color: var(--text-primary) !important; margin-bottom: 1em; }
+        #resizer { width: 8px; cursor: col-resize; background: transparent; flex-shrink: 0; border-radius: 4px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        #resizer::before { content: ''; width: 2px; height: 50px; background-color: var(--glass-border-color); border-radius: 1px; transition: var(--transition-fast); }
+        #resizer:hover::before { background-color: var(--primary-accent); transform: scaleX(2); }
+        .exam-footer { padding: 12px 24px; display: flex; align-items: center; flex-shrink: 0; border-top: 1px solid var(--glass-border-color); }
+        .navigation-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem; }
+        .nav-left-group { display: flex; align-items: center; gap: 1rem; flex-grow: 1; overflow: hidden; }
+        .navigation-pane { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding: 6px 0; -ms-overflow-style: none; scrollbar-width: none; }
+        .navigation-pane::-webkit-scrollbar { display: none; }
+        .nav-item { min-width: 32px; height: 32px; padding: 0 10px; border: 1px solid var(--glass-border-color); display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; transition: var(--transition-medium); flex-shrink: 0; font-weight: 600; color: var(--text-secondary); }
+        .nav-item.hidden { display: none; }
+        .nav-item:hover { background-color: rgba(109, 40, 217, 0.1); transform: translateY(-2px); }
+        .nav-item.answered { background-color: var(--primary-accent); color: white; border-color: transparent; }
+        body.dark .nav-item.answered { color: #1e293b; }
+        .nav-item.current { border-color: var(--primary-accent); border-width: 2px; color: var(--text-primary); transform: scale(1.1); box-shadow: 0 0 10px rgba(109, 40, 217, 0.3); }
+        .footer-buttons { flex-shrink: 0; }
+        .btn { padding: 10px 22px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: var(--transition-medium); display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
+        .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
+        .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
+        .btn-secondary { background: rgba(0, 0, 0, 0.05); color: var(--text-primary); }
+        .themed-select { padding: 8px 12px; border: 1px solid var(--glass-border-color); background-color: rgba(0,0,0,0.02); cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-secondary); -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 1em; padding-right: 2rem; flex-shrink: 0; transition: var(--transition-fast); }
+        .themed-select:hover { border-color: var(--primary-accent); }
+        .question-block { margin-bottom: 2.2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border-color); }
+        .question-range-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; }
+        .question-instruction { font-weight: 600; margin-bottom: 1rem; color: var(--text-primary); line-height: 1.6; }
+        .question-text { margin-bottom: 10px; color: var(--text-secondary); line-height: 1.6; }
+        .mc-option { display: flex; align-items: center; gap: 10px; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid transparent; transition: var(--transition-fast); }
+        .mc-option:hover { background-color: rgba(109, 40, 217, 0.05); }
+        .tfn-options { display: flex; gap: 15px; margin-top: 10px; }
+        .tfn-label { padding: 10px 18px; border: 1px solid var(--glass-border-color); border-radius: 10px; cursor: pointer; font-weight: 600; transition: var(--transition-medium); color: var(--text-primary); }
+        .tfn-label input { display: none; }
+        .tfn-label:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .tfn-label.selected { background-color: var(--primary-accent); color: white; border-color: var(--primary-accent); transform: translateY(-2px) scale(1.05); }
+        .completion-input { border: none; border-bottom: 2px solid var(--primary-accent); background: transparent; padding: 4px 8px; font-size: 1em; width: 150px; text-align: center; color: var(--text-primary); transition: var(--transition-fast); }
+        .completion-input:focus { outline: none; background-color: rgba(109, 40, 217, 0.1); }
+        .matching-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .matching-item span { flex-grow: 1; }
+        .drop-zone { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%; }
+        .drop-target { border: 1px dashed var(--text-secondary); padding: 10px; min-width: 150px; min-height: 42px; border-radius: 8px; background-color: rgba(0,0,0,0.05); flex-grow: 1; transition: var(--transition-fast); display: flex; justify-content: center; align-items: center; }
+        .drop-target:not(:empty) { padding: 0; border-style: solid; background-color: transparent; }
+        .drop-target.over { border-color: var(--primary-accent); background-color: rgba(109, 40, 217, 0.2); transform: scale(1.02); }
+        .drag-option { background: #fff; border: 1px solid var(--glass-border-color); padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: var(--text-primary); cursor: grab; transition: var(--transition-medium); flex-shrink: 0; }
+        body.dark .drag-option { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+        .dragging { opacity: 0.5; transform: scale(1.05) rotate(2deg) !important; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); pointer-events: none; transition: opacity var(--transition-medium), transform var(--transition-medium); }
+        .modal.show { display: flex; opacity: 1; transform: scale(1); pointer-events: auto; }
+        .modal-content { padding: 24px; width: 90%; max-width: 500px; border-radius: 24px; text-align: center; transition: transform var(--transition-medium); transform: translateY(10px); }
+        .modal.show .modal-content { transform: translateY(0); }
+        .modal-score { font-size: 3rem; font-weight: 700; color: var(--primary-accent); margin: 20px 0; }
+        .review-mode .correct { background-color: var(--correct-bg) !important; border-color: var(--correct-border) !important; }
+        .review-mode .correct, .review-mode .correct-answer-text { color: var(--correct-text) !important; }
+        .review-mode .incorrect { background-color: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; }
+        .review-mode .incorrect, .review-mode .incorrect-text { color: var(--incorrect-text) !important; }
+        .review-mode .completion-input.incorrect { text-decoration: line-through; }
+        .correct-answer-text { font-weight: 600; margin-left: 10px; }
+        .note-completion-block h4, .note-completion-block h5 { color: var(--text-primary); font-weight: 700; margin-bottom: 0.5rem; }
+        .note-completion-block h5 { font-size: 1.05rem; }
+        .note-completion-block ul { list-style-type: none; padding-left: 20px; margin: 0.5rem 0 1rem 0; }
+        .note-completion-block li { color: var(--text-secondary); margin-bottom: 0.75rem; }
+        .instruction-box { line-height: 1.7; color: var(--text-secondary); }
+        .instruction-box b { color: var(--text-primary); }
+        .instruction-box span { display: inline-block; width: 20px; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; color: var(--primary-accent); font-size: 1.5rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">Đang tải dữ liệu bài thi...</div>
+    <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
+    <div class="exam-container" style="display: none;">
+        <div class="unified-panel">
+            <header class="exam-header glass-effect">
+                <div class="header-left"> <span>IELTS</span> </div>
+                <div class="header-center" id="exam-title">Reading Test</div>
+                <div class="header-right">
+                    <div id="timer">60:00</div>
+                    <div id="settings-btn"><svg class="settings-icon" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg></div>
+                </div>
+                <div class="settings-dropdown" id="settings-dropdown">
+                    <div class="settings-group"><label for="text-size">Text Size</label><select id="text-size" class="themed-select"><option value="1">Regular</option><option value="1.2">Large</option><option value="1.4">Extra Large</option></select></div>
+                    <div class="settings-group"><label for="theme-toggle">Theme</label><select id="theme-toggle" class="themed-select"><option value="light">Light</option><option value="dark">Dark</option></select></div>
+                </div>
+            </header>
+            <main class="main-content">
+                <div class="panel passage-panel" id="passage-panel"><div id="passage-content" class="passage-content"></div></div>
+                <div id="resizer"></div>
+                <div class="panel questions-panel" id="questions-panel"><div id="questions-content"></div></div>
+            </main>
+            <footer class="exam-footer glass-effect">
+                <div class="navigation-controls">
+                    <div class="nav-left-group">
+                        <div class="passage-filter"><select id="passage-select" class="themed-select"><option value="1">Passage 1</option><option value="2">Passage 2</option><option value="3">Passage 3</option></select></div>
+                        <div id="navigation-pane" class="navigation-pane"></div>
+                    </div>
+                     <div class="footer-buttons"><button id="review-btn" class="btn btn-secondary" style="display: none;">Làm lại</button><button id="submit-btn" class="btn btn-main-action">Nộp bài</button></div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <div id="result-modal" class="modal"><div class="modal-content glass-effect"><h2>Hoàn thành bài thi!</h2><p>Điểm số của bạn là:</p><p id="modal-score" class="modal-score">0 / 40</p><button id="close-modal-btn" class="btn btn-main-action">Xem lại bài làm</button></div></div>
+    <div id="confirm-submit-modal" class="modal"><div class="modal-content glass-effect"><h2>Xác nhận nộp bài</h2><p style="color: var(--text-secondary); margin: 1rem 0;">Bạn có chắc chắn muốn nộp bài không?</p><div style="display: flex; justify-content: center; gap: 1rem;"><button id="confirm-submit-no" class="btn btn-secondary">Không</button><button id="confirm-submit-yes" class="btn btn-main-action">Có, nộp bài</button></div></div></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
+  authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
+  projectId: "ielts-foundation-6ea9d",
+  storageBucket: "ielts-foundation-6ea9d.firebasestorage.app",
+  messagingSenderId: "296690693780",
+  appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
+  measurementId: "G-CZD89F0FC3"
+};
+
+    // Khởi tạo Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const passageContentEl = document.getElementById('passage-content');
+        const questionsContentEl = document.getElementById('questions-content');
+        const navigationPaneEl = document.getElementById('navigation-pane');
+        const timerEl = document.getElementById('timer');
+        const passagePanelEl = document.getElementById('passage-panel');
+        const questionsPanelEl = document.getElementById('questions-panel');
+        const passageSelectEl = document.getElementById('passage-select');
+        const resizerEl = document.getElementById('resizer');
+        const settingsDropdownEl = document.getElementById('settings-dropdown');
+        const resultModalEl = document.getElementById('result-modal');
+        const modalScoreEl = document.getElementById('modal-score');
+        
+        let userAnswers = {};
+        let timerInterval;
+        let isResizing = false;
+        let dragged = null;
+        let questionDataMap = new Map();
+        let currentUser = null;
+        let currentTestId = null;
+
+        const RENDERERS = {
+            multiple_choice_one_answer: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p>${item.options.map((opt, i) => `<label class="mc-option"><input type="radio" name="q${item.qNum}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`).join('')}`,
+            multiple_choice_more_answers: block => `<div data-q-container="${block.range.split('-')[0]}"><p class="question-instruction">${block.instruction}</p><p class="question-text"><b>${block.range}.</b> ${block.text}</p>${block.options.map((opt, i) => `<label class="mc-option"><input type="checkbox" name="q${block.range.split('-')[0]}" value="${i}"><span>${opt}</span></label>`).join('')}</div>`,
+            true_false_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['TRUE', 'FALSE', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
+            yes_no_not_given: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text}</p><div class="tfn-options">${['YES', 'NO', 'NOT GIVEN'].map(opt => `<label class="tfn-label"><input type="radio" name="q${item.qNum}" value="${opt}">${opt}</label>`).join('')}</div></div>`).join('')}`,
+            note_completion: block => RENDERERS.sentence_completion(block),
+            sentence_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.items.map(item => `<div class="question-item" data-q-container="${item.qNum}"><p class="question-text"><b>${item.qNum}.</b> ${item.text.replace(/______/g, `<input type="text" class="completion-input" data-q-num="${item.qNum}">`)}</p></div>`).join('')}`,
+            custom_html_completion: block => `<p class="question-instruction">${block.instruction}</p>${block.content}`,
+            summary_completion_from_text: block => `<p class="question-instruction">${block.instruction}</p><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span data-q-container="${qNum}"><b>${qNum}.</b> <input type="text" class="completion-input" data-q-num="${qNum}"></span>`)}</p>`,
+            table_completion: block => `<p class="question-instruction">${block.instruction}</p><table class="completion-table"><thead><tr>${block.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${block.rows.map(row => `<tr>${row.map(cell => typeof cell === 'object' ? `<td data-q-container="${cell.qNum}"><b>${cell.qNum}.</b> <input type="text" class="completion-input" data-q-num="${cell.qNum}"></td>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
+            matching_features: block => `<p class="question-instruction">${block.instruction}</p><div style="margin-bottom:1rem;line-height:1.5;">${block.features.map((f, i) => `<b>${String.fromCharCode(65+i)}</b>. ${f}`).join('<br>')}</div>${block.items.map(item => `<div class="matching-item" data-q-container="${item.qNum}"><span><b>${item.qNum}.</b> ${item.text}</span><select class="themed-select" data-q-num="${item.qNum}"><option value="">Select...</option>${block.features.map((f, i) => `<option value="${String.fromCharCode(65 + i)}">${f}</option>`).join('')}</select></div>`).join('')}`,
+            summary_completion_from_list: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area"><p>${block.summary.replace(/(\d+)\.______/g, (match, qNum) => `<span class="drop-zone" data-q-container="${qNum}"><b>${qNum}.</b> <span class="drop-target" data-q-num="${qNum}"></span></span>`)}</p></div><div class="drag-options-area">${block.options.map(opt => `<div class="drag-option" draggable="true" data-value="${opt.split('.')[0]}">${opt}</div>`).join('')}</div></div>`,
+            matching_sentence_endings: block => `<p class="question-instruction">${block.instruction}</p><div class="drag-drop-container"><div class="drop-zone-area">${block.items.map(item => `<div class="drop-zone" data-q-container="${item.qNum}"><span style="flex-shrink:0;"><b>${item.qNum}.</b> ${item.start}</span><span class="drop-target" data-q-num="${item.qNum}"></span></div>`).join('')}</div><div class="drag-options-area">${block.endings.map(ending => `<div class="drag-option" draggable="true" data-value="${ending.charAt(0)}">${ending}</div>`).join('')}</div></div>`,
+        };
+
+        const updateAnswer = (qNum, value) => {
+            const navItem = document.querySelector(`.nav-item[data-q-num='${qNum}']`);
+            if (value && value.length !== 0 && String(value).trim() !== "") {
+                userAnswers[qNum] = value;
+                navItem?.classList.add('answered');
+            } else {
+                delete userAnswers[qNum];
+                navItem?.classList.remove('answered');
+            }
+        };
+
+        const showPassageAndQuestions = (passageNum, isInitialLoad = false) => {
+            const passageNumStr = String(passageNum);
+            const panels = [passagePanelEl, questionsPanelEl];
+            const displayContent = () => {
+                document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'none');
+                document.getElementById(`passage-container-${passageNumStr}`).style.display = 'block';
+                document.querySelectorAll(`.question-block[data-passage="${passageNumStr}"]`).forEach(q => q.style.display = 'block');
+            };
+            if (isInitialLoad) { displayContent(); } 
+            else {
+                panels.forEach(p => p.classList.add('fading'));
+                setTimeout(() => {
+                    displayContent();
+                    panels.forEach(p => p.classList.remove('fading'));
+                }, 150);
+            }
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('hidden', item.dataset.passageNum !== passageNumStr));
+            panels.forEach(p => p.scrollTop = 0);
+        };
+        
+        const handleMouseMove = (e) => { if (!isResizing) return; const container = resizerEl.parentElement; const newLeftWidth = e.clientX - container.offsetLeft; if (newLeftWidth > 200 && (container.offsetWidth - newLeftWidth) > 200) { passagePanelEl.style.width = `${newLeftWidth}px`; questionsPanelEl.style.flex = '1 1 0%'; } };
+        const stopResizing = () => { isResizing = false; document.removeEventListener('mouseup', stopResizing); document.removeEventListener('mousemove', handleMouseMove); };
+        
+        const submitTest = () => {
+            clearInterval(timerInterval);
+            let score = 0;
+            questionDataMap.forEach((data, qNum) => {
+                const userAnswer = userAnswers[qNum];
+                if (userAnswer === undefined) return;
+                let isCorrect = false;
+                if (data.type === 'multiple_choice_more_answers') {
+                    const correctAnswers = new Set(data.answer);
+                    const userAnswersSet = new Set(userAnswer);
+                    isCorrect = correctAnswers.size === userAnswersSet.size && [...correctAnswers].every(val => userAnswersSet.has(val));
+                } else {
+                    isCorrect = String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
+                }
+                if (isCorrect) score++;
+            });
+            modalScoreEl.textContent = `${score} / ${questionDataMap.size}`;
+            resultModalEl.classList.add('show');
+
+            if (currentUser && currentTestId) {
+                db.collection("results").add({
+                    studentEmail: currentUser.email,
+                    testId: currentTestId,
+                    answers: userAnswers,
+                    score: score,
+                    totalQuestions: questionDataMap.size,
+                    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    console.log("Kết quả đã được lưu thành công!");
+                }).catch((error) => {
+                    console.error("Lỗi khi lưu kết quả: ", error);
+                });
+            }
+        };
+
+        const showReview = () => {
+            resultModalEl.classList.remove('show');
+            document.body.classList.add('review-mode');
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('review-btn').style.display = 'block';
+            document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+            document.querySelectorAll('.drag-option').forEach(el => el.draggable = false);
+            
+            document.querySelectorAll('#passage-content > div, #questions-content > div').forEach(el => el.style.display = 'block');
+            passagePanelEl.scrollTop = 0;
+            questionsPanelEl.scrollTop = 0;
+
+            questionDataMap.forEach((data, qNum) => {
+                const userAnswer = userAnswers[qNum];
+                const qContainer = document.querySelector(`[data-q-container="${qNum}"]`);
+                if (!qContainer) return;
+
+                let isCorrect = false;
+                if (data.type === 'multiple_choice_more_answers') {
+                    const correctAnswers = new Set(data.answer);
+                    const userAnswersSet = new Set(userAnswer || []);
+                    isCorrect = correctAnswers.size === userAnswersSet.size && [...correctAnswers].every(val => userAnswersSet.has(val));
+                } else {
+                    isCorrect = userAnswer !== undefined && String(userAnswer).trim().toLowerCase() === String(data.answer).toLowerCase();
+                }
+
+                const elementToMark = qContainer.querySelector(`[data-q-num="${qNum}"], input[name="q${qNum}"], select[data-q-num="${qNum}"]`) || qContainer;
+                const parent = elementToMark.closest('.mc-option, .tfn-label, .matching-item, .drop-target, li, td') || elementToMark;
+                parent.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+                if (!isCorrect) {
+                    const correctAnsEl = document.createElement('span');
+                    correctAnsEl.className = 'correct-answer-text';
+                    let correctAnswerText = data.answer;
+                    if (data.type === 'multiple_choice_one_answer') {
+                         const correctIndex = parseInt(data.answer);
+                         const optionText = qContainer.querySelectorAll('span')[correctIndex+1]?.textContent;
+                         correctAnswerText = optionText || data.answer;
+                    }
+                    else if (data.type === 'matching_features') {
+                        const correctIndex = data.answer.charCodeAt(0) - 65; // 'A' -> 0, 'B' -> 1
+                        correctAnswerText = qContainer.querySelector('.themed-select').options[correctIndex+1].text;
+                    }
+                    correctAnsEl.textContent = ` (Đáp án: ${correctAnswerText})`;
+                    if(parent.querySelector('.correct-answer-text') === null) {
+                         (parent.parentElement || parent).appendChild(correctAnsEl);
+                    }
+                }
+            });
+        };
+
+        const initializeListeners = () => {
+            questionsContentEl.addEventListener('input', e => { if (e.target.matches('.completion-input')) updateAnswer(e.target.dataset.qNum, e.target.value); });
+            questionsContentEl.addEventListener('change', e => {
+                const target = e.target;
+                const qNum = target.name?.replace('q', '') || target.dataset.qNum;
+                if (target.matches('input[type="radio"]')) {
+                    if (target.closest('.tfn-options')) {
+                        target.closest('.tfn-options').querySelectorAll('.tfn-label').forEach(l => l.classList.remove('selected'));
+                        target.parentElement.classList.add('selected');
+                    }
+                    let valueToUpdate = target.value;
+                    if (target.name.startsWith('q') && !target.closest('.tfn-options')) {
+                         valueToUpdate = parseInt(target.value);
+                    }
+                    updateAnswer(qNum, valueToUpdate);
+                } else if (target.matches('input[type="checkbox"]')) {
+                    const checkedBoxes = questionsContentEl.querySelectorAll(`input[name="${target.name}"]:checked`);
+                    const block = examData.questionBlocks.find(b => b.range?.startsWith(qNum));
+                    if (block && checkedBoxes.length > block.limit) {
+                        target.checked = false; return;
+                    }
+                    updateAnswer(qNum, Array.from(checkedBoxes).map(cb => parseInt(cb.value)));
+                } else if (target.matches('select')) {
+                    updateAnswer(qNum, target.value);
+                }
+            });
+            questionsContentEl.addEventListener('dragstart', e => { if (e.target.matches('.drag-option')) { dragged = e.target; setTimeout(() => e.target.classList.add('dragging'), 0); }});
+            questionsContentEl.addEventListener('dragend', e => { if (e.target.matches('.drag-option')) e.target.classList.remove('dragging'); });
+            questionsContentEl.addEventListener('dragover', e => e.preventDefault());
+            questionsContentEl.addEventListener('drop', e => {
+                e.preventDefault();
+                if (!dragged) return;
+                const dropZone = e.target.closest('.drop-target, .drag-options-area');
+                if (!dropZone) { dragged = null; return; }
+                const sourceContainer = dragged.parentElement;
+                if (sourceContainer.matches('.drop-target')) updateAnswer(sourceContainer.dataset.qNum, null);
+                if (dropZone.matches('.drop-target')) {
+                    if (dropZone.children.length > 0) dropZone.closest('.drag-drop-container').querySelector('.drag-options-area').appendChild(dropZone.firstElementChild);
+                    dropZone.appendChild(dragged);
+                    updateAnswer(dropZone.dataset.qNum, dragged.dataset.value);
+                } else if (dropZone.matches('.drag-options-area')) {
+                    dropZone.appendChild(dragged);
+                }
+                dragged = null;
+            });
+            
+            passageSelectEl.addEventListener('change', e => showPassageAndQuestions(e.target.value));
+            document.getElementById('submit-btn').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.add('show'));
+            document.getElementById('close-modal-btn').addEventListener('click', showReview);
+            document.getElementById('confirm-submit-yes').addEventListener('click', () => { document.getElementById('confirm-submit-modal').classList.remove('show'); submitTest(); });
+            document.getElementById('confirm-submit-no').addEventListener('click', () => document.getElementById('confirm-submit-modal').classList.remove('show'));
+            document.getElementById('review-btn').addEventListener('click', () => window.location.reload());
+            document.getElementById('settings-btn').addEventListener('click', e => { e.stopPropagation(); settingsDropdownEl.classList.toggle('show'); });
+            settingsDropdownEl.addEventListener('click', e => e.stopPropagation());
+            document.addEventListener('click', () => settingsDropdownEl.classList.remove('show'));
+            document.getElementById('text-size').addEventListener('change', e => { document.documentElement.style.fontSize = `${15 * parseFloat(e.target.value)}px`; });
+            document.getElementById('theme-toggle').addEventListener('change', e => { document.body.classList.toggle('dark', e.target.value === 'dark'); localStorage.setItem('ielts-theme', e.target.value); });
+            navigationPaneEl.addEventListener('click', e => {
+                const navItem = e.target.closest('.nav-item');
+                if (!navItem) return;
+                const passageNum = navItem.dataset.passageNum;
+                if (passageSelectEl.value !== passageNum) {
+                    passageSelectEl.value = passageNum;
+                    showPassageAndQuestions(passageNum);
+                }
+                setTimeout(() => {
+                    const questionEl = document.querySelector(`[data-q-container="${navItem.dataset.qNum}"]`);
+                    if (questionEl) {
+                        questionsPanelEl.scrollTop = questionEl.offsetTop - 30;
+                        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('current'));
+                        navItem.classList.add('current');
+                    }
+                }, 200);
+            });
+            resizerEl.addEventListener('mousedown', (e) => { e.preventDefault(); isResizing = true; document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', stopResizing); });
+        };
+
+        const initializeExam = (examData) => {
+            document.getElementById('exam-title').innerText = examData.title || 'Reading Test';
+            let navHtml = '';
+            examData.questionBlocks.forEach(block => {
+                const passageNum = block.passage;
+                const processItem = item => {
+                    navHtml += `<div class="nav-item" data-q-num="${item.qNum}" data-passage-num="${passageNum}">${item.qNum}</div>`;
+                    let answer = item.answer;
+                    if (block.type === 'multiple_choice_one_answer') {
+                        answer = String(item.answer); // Store index as string
+                    }
+                    questionDataMap.set(String(item.qNum), { answer: answer, type: block.type });
+                };
+                if (block.items) { block.items.forEach(processItem); } 
+                else if (block.answers) { Object.entries(block.answers).forEach(([qNum, answer]) => {
+                    navHtml += `<div class="nav-item" data-q-num="${qNum}" data-passage-num="${passageNum}">${qNum}</div>`;
+                    questionDataMap.set(qNum, { answer, type: block.type });
+                });}
+            });
+            navigationPaneEl.innerHTML = navHtml;
+            passageContentEl.innerHTML = examData.passages.map(p => `<div id="passage-container-${p.id}">${p.content}</div>`).join('');
+            questionsContentEl.innerHTML = examData.questionBlocks.map(block => `<div class="question-block" data-passage="${block.passage}"><p class="question-range-title">Questions ${block.range}</p>${RENDERERS[block.type](block)}</div>`).join('');
+            
+            const savedTheme = localStorage.getItem('ielts-theme') || 'light';
+            document.body.classList.toggle('dark', savedTheme === 'dark');
+            document.getElementById('theme-toggle').value = savedTheme;
+            
+            initializeListeners();
+            showPassageAndQuestions("1", true);
+
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.querySelector('.exam-container').style.display = 'flex';
+
+            let time = examData.timeLimitMinutes * 60;
+            timerInterval = setInterval(() => {
+                if (--time < 0) {
+                    clearInterval(timerInterval); 
+                    if(!document.body.classList.contains('review-mode')) submitTest();
+                    return;
+                }
+                timerEl.textContent = `${Math.floor(time/60).toString().padStart(2,'0')}:${(time%60).toString().padStart(2,'0')}`;
+            }, 1000);
+        };
+        
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                const urlParams = new URLSearchParams(window.location.search);
+                const testId = urlParams.get('testId');
+                currentTestId = testId;
+
+                if (testId) {
+                    db.collection("tests").doc(testId).get().then((doc) => {
+                        if (doc.exists) {
+                            initializeExam(doc.data());
+                        } else {
+                            document.getElementById('loading-overlay').innerText = "Lỗi: Không tìm thấy bài thi.";
+                        }
+                    }).catch((error) => {
+                         document.getElementById('loading-overlay').innerText = "Lỗi khi tải dữ liệu từ Firebase.";
+                         console.error("Error loading test data:", error);
+                    });
+                } else {
+                    document.getElementById('loading-overlay').innerText = "Lỗi: Không có bài thi nào được chọn.";
+                }
+            } else {
+                window.location.href = 'index.html'; 
+            }
+        });
+    });
+    </script>
+</body>
+</html>
