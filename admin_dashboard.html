@@ -317,50 +317,116 @@
 
     // 3. CONTENT MANAGEMENT (MODIFIED)
     async function renderContentManagement() {
-        pageTitle.textContent = 'Quản Lý Giáo Trình';
-        mainContent.innerHTML = `<p>Đang tải...</p>`;
-
-        const curriculumsSnap = await db.collection('curriculums').get();
-        let curriculumListHtml = curriculumsSnap.docs.map(doc => {
-            const data = doc.data();
-            return `
-                <div class="list-item flex justify-between items-center border-l-4 border-transparent p-3" data-curriculum-id="${doc.id}" data-curriculum-name="${data.name}">
-                    <span class="font-bold text-gray-800 cursor-pointer flex-grow">${data.name}</span>
-                    <button class="context-menu-trigger text-gray-500 hover:text-gray-800 px-2" data-context-type="curriculum" data-id="${doc.id}" data-name="${data.name}">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                </div>
-            `
-        }).join('');
-
-        mainContent.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-                <div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
-                    <h2 class="text-xl font-bold mb-4">Danh sách Giáo trình</h2>
-                     <div class="mb-4">
-                        <input id="curriculum-search" class="w-full p-2 border rounded" placeholder="🔎 Tìm kiếm giáo trình...">
-                    </div>
-                    <div id="curriculum-list" class="overflow-y-auto flex-grow">${curriculumListHtml}</div>
-                </div>
-                <div id="curriculum-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6">
-                    <p class="text-gray-500">Chọn một giáo trình để xem các unit và học phần.</p>
+    pageTitle.textContent = 'Quản Lý Giáo Trình';
+    mainContent.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+            <div id="content-tree-panel" class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                <h2 class="text-xl font-bold mb-4">Cấu trúc Giáo trình</h2>
+                <div id="tree-container" class="tree-container overflow-y-auto flex-grow">
+                    <p>Đang tải cấu trúc cây...</p>
                 </div>
             </div>
-        `;
-        // NEW: Add event listener for the search bar
-        document.getElementById('curriculum-search').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('#curriculum-list .list-item').forEach(item => {
-                const name = item.dataset.curriculumName.toLowerCase();
-                if (name.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-    }
+            <div id="content-detail-panel" class="md:col-span-2 bg-white rounded-lg shadow p-6">
+                <p class="text-gray-500">Chọn một mục từ cây thư mục để xem chi tiết.</p>
+            </div>
+        </div>
+    `;
 
+    try {
+        // --- 1. LẤY DỮ LIỆU TỪ CÁC COLLECTION MỚI ---
+        const [curriculumsSnap, unitsSnap, modulesSnap] = await Promise.all([
+            db.collection('new_curriculums').get(),
+            db.collection('new_units').orderBy('order').get(),
+            db.collection('new_modules').orderBy('order').get()
+        ]);
+
+        const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const units = unitsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // --- 2. XÂY DỰNG CẤU TRÚC CÂY TRONG BỘ NHỚ ---
+        // Sử dụng Map để truy cập nhanh với độ phức tạp O(1)
+        const curriculumMap = new Map(curriculums.map(c => [c.id, { ...c, units: [] }]));
+        const unitMap = new Map(units.map(u => [u.id, { ...u, modules: [] }]));
+
+        // Gắn modules vào units
+        modules.forEach(m => {
+            if (unitMap.has(m.unitId)) {
+                unitMap.get(m.unitId).modules.push(m);
+            }
+        });
+
+        // Gắn units (đã có modules) vào curriculums
+        units.forEach(u => {
+            if (curriculumMap.has(u.curriculumId)) {
+                curriculumMap.get(u.curriculumId).units.push(unitMap.get(u.id));
+            }
+        });
+        
+        // --- 3. RENDER HTML TỪ CẤU TRÚC CÂY ---
+        const treeContainer = document.getElementById('tree-container');
+        if (curriculumMap.size === 0) {
+            treeContainer.innerHTML = '<p>Chưa có giáo trình nào.</p>';
+            return;
+        }
+
+        let treeHtml = '<ul>';
+        for (const curriculum of curriculumMap.values()) {
+            // Render units
+            let unitsHtml = '<ul class="nested-list">';
+            curriculum.units.forEach(unit => {
+                // Render modules
+                let modulesHtml = '<ul class="nested-list">';
+                unit.modules.forEach(module => {
+                    const moduleIcon = module.type === 'vocab' ? '📖' : (module.type === 'exam' ? '✍️' : '📄');
+                    modulesHtml += `<li><div class="tree-node" data-id="${module.id}" data-type="module">${moduleIcon} ${module.title}</div></li>`;
+                });
+                modulesHtml += '</ul>';
+                
+                unitsHtml += `<li>
+                    <div class="tree-node" data-id="${unit.id}" data-type="unit">
+                        <span class="toggle-icon"></span>📄 ${unit.name}
+                    </div>
+                    ${modulesHtml}
+                </li>`;
+            });
+            unitsHtml += '</ul>';
+
+            treeHtml += `<li>
+                <div class="tree-node" data-id="${curriculum.id}" data-type="curriculum">
+                    <span class="toggle-icon"></span>📁 ${curriculum.name}
+                </div>
+                ${unitsHtml}
+            </li>`;
+        }
+        treeHtml += '</ul>';
+        treeContainer.innerHTML = treeHtml;
+
+        // --- 4. GẮN SỰ KIỆN CLICK ĐỂ ẨN/HIỆN CÁC NHÁNH ---
+        treeContainer.addEventListener('click', (e) => {
+            const node = e.target.closest('.tree-node');
+            if (!node) return;
+
+            // Xử lý sự kiện thu gọn/mở rộng
+            if (node.querySelector('.toggle-icon') && e.target.classList.contains('toggle-icon')) {
+                const nestedList = node.nextElementSibling;
+                if (nestedList && nestedList.tagName === 'UL') {
+                    nestedList.classList.toggle('hidden');
+                    node.classList.toggle('collapsed');
+                }
+            } else {
+                 // Xử lý sự kiện khi click vào tên (để xem chi tiết ở Giai đoạn 3)
+                console.log(`Clicked on ${node.dataset.type} with ID: ${node.dataset.id}`);
+                const detailPanel = document.getElementById('content-detail-panel');
+                detailPanel.innerHTML = `<p>Đã chọn <b>${node.dataset.type.toUpperCase()}</b>: ${node.innerText}</p><p>ID: ${node.dataset.id}</p><p class="mt-4 text-gray-500">Chức năng sửa đổi và thêm mới sẽ được cập nhật ở Giai đoạn 3.</p>`;
+            }
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi dựng cây thư mục:", error);
+        document.getElementById('tree-container').innerHTML = '<p class="text-red-500">Không thể tải được cấu trúc giáo trình.</p>';
+    }
+}
     async function renderCurriculumDetail(curriculumId) {
         // ... (Không thay đổi)
         const detailView = document.getElementById('curriculum-detail');
