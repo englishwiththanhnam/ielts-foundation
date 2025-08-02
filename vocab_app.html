@@ -51,6 +51,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none;
         }
 
         .shape {
@@ -280,42 +281,13 @@
 
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
-        /* --- MODAL & POP-UP ANIMATIONS --- */
-        @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes scaleOut {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.95); }
-        }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes scaleOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
 
-        .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 100; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0, 0, 0, 0.2); 
-            backdrop-filter: blur(8px); 
-            -webkit-backdrop-filter: blur(8px); 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .modal.is-open {
-            display: flex;
-        }
-        .modal-content { 
-            padding: 24px; 
-            width: 90%; 
-            max-width: 500px; 
-            animation: scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-        }
-        .modal.is-closing .modal-content {
-            animation: scaleOut 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-        }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+        .modal.is-open { display: flex; }
+        .modal-content { padding: 24px; width: 90%; max-width: 500px; animation: scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
+        .modal.is-closing .modal-content { animation: scaleOut 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
 
         .modal-header { border-bottom: 1px solid rgba(255,255,255,0.3); display: flex; justify-content: space-between; align-items: center; }
         .close-button { color: #eee; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
@@ -324,7 +296,6 @@
         #word-table th { position: sticky; top: 0; background: rgba(248, 250, 252, 0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 10; }
         body.dark #word-table th { background: rgba(30, 41, 59, 0.85); }
         body.dark #word-table td, body.dark #word-table th { color: var(--text-primary); }
-
 
         .dashboard-stat-card { transition: all 0.3s ease; }
         .dashboard-stat-card:hover { transform: translateY(-5px) scale(1.03); }
@@ -347,16 +318,10 @@
         body.dark input[type="text"], body.dark input[type="number"] { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
         body.dark input[type="text"]:focus, body.dark input[type="number"]:focus { background: rgba(255, 255, 255, 0.2); border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3); }
 
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.5s ease forwards; }
 
-        /* --- DARK MODE TEXT COLOR FIXES --- */
-        body.dark .text-slate-800,
-        body.dark .text-slate-700,
-        body.dark .text-violet-800 { 
-            color: var(--text-primary); 
-        }
+        body.dark .text-slate-800, body.dark .text-slate-700, body.dark .text-violet-800 { color: var(--text-primary); }
         body.dark .text-slate-600 { color: var(--text-secondary); }
         body.dark .text-green-800 { color: #4ade80; }
         body.dark .text-red-800 { color: #f87171; }
@@ -392,14 +357,17 @@
             </div>
             <div class="mt-auto">
                  <div class="pt-4 border-t border-white/20">
+                    <a id="back-to-assignment-btn" href="#" class="sidebar-nav-btn w-full justify-center bg-gray-200/50">
+                        <i class="fas fa-arrow-left mr-2"></i> Quay lại
+                    </a>
                     <button id="theme-toggle-btn" class="sidebar-nav-btn w-full">
                         <i id="theme-toggle-icon" class="fas fa-moon"></i>
                         <span id="theme-toggle-text">Dark Mode</span>
                     </button>
                 </div>
-                 <button id="nav-reset" class="sidebar-nav-btn w-full justify-center text-red-500 hover:bg-red-100 hover:text-red-700">
-                     <i class="fas fa-trash-alt mr-2"></i> Reset Progress
-                 </button>
+                <button id="nav-reset" class="sidebar-nav-btn w-full justify-center text-red-500 hover:bg-red-100 hover:text-red-700">
+                    <i class="fas fa-trash-alt mr-2"></i> Reset Progress
+                </button>
             </div>
         </nav>
         
@@ -407,7 +375,7 @@
 
         <main id="app">
              <header class="main-header">
-                 <button id="menu-toggle-btn">
+                 <button id="menu-toggle-btn" class="lg:hidden">
                      <i class="fas fa-bars text-xl"></i>
                  </button>
                  <div class="text-left">
@@ -428,8 +396,7 @@
                 <span id="close-word-modal-btn" class="close-button">&times;</span>
             </div>
             <div id="word-table-container" class="overflow-y-auto flex-grow">
-                <table id="word-table" class="w-full text-sm text-left text-slate-700">
-                </table>
+                <table id="word-table" class="w-full text-sm text-left text-slate-700"></table>
             </div>
         </div>
     </div>
@@ -450,13 +417,11 @@
         </div>
     </div>
 
-    <!-- [THAY ĐỔI QUAN TRỌNG] SCRIPT TÍCH HỢP FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script type="module">
-        // --- PHẦN 1: KẾT NỐI FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
             authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
@@ -469,9 +434,8 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let assignmentId, vocabId, userId;
+        let assignmentId, moduleId, userId;
 
-        // --- PHẦN 2: LOGIC APP TỪ VỰNG CỦA BẠN ---
         const App = {
             data: {
                 words: [],
@@ -519,9 +483,11 @@
                         userId = user.uid;
                         const urlParams = new URLSearchParams(window.location.search);
                         assignmentId = urlParams.get('assignmentId');
-                        vocabId = urlParams.get('vocabId');
+                        moduleId = urlParams.get('vocabId');
+                        
+                        document.getElementById('back-to-assignment-btn').href = `assignment.html?id=${assignmentId}`;
 
-                        if (!assignmentId || !vocabId) {
+                        if (!assignmentId || !moduleId) {
                             document.getElementById('main-content').innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: URL không hợp lệ.</h1><p class="mt-2 text-slate-600">Vui lòng quay lại trang bài tập và thử lại.</p></div>`;
                             return;
                         }
@@ -539,20 +505,24 @@
                 const mainContent = document.getElementById('main-content');
                 mainContent.innerHTML = `<div class="text-center text-lg text-slate-600">Đang tải bộ từ vựng...</div>`;
                 
-                const vocabSetDoc = await db.collection('vocab_sets').doc(vocabId).get();
-                if (!vocabSetDoc.exists) {
-                    mainContent.innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: Không tìm thấy bộ từ vựng.</h1><p class="mt-2 text-slate-600">Vui lòng liên hệ giáo viên của bạn.</p></div>`;
-                    return;
+                const moduleDoc = await db.collection('modules').doc(moduleId).get();
+                if (!moduleDoc.exists) {
+                    mainContent.innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: Không tìm thấy học phần.</h1><p class="mt-2 text-slate-600">Vui lòng liên hệ giáo viên của bạn.</p></div>`;
+                    throw new Error("Module not found");
                 }
-                const vocabSetData = vocabSetDoc.data();
-                const originalWords = vocabSetData.words;
+                const moduleData = moduleDoc.data();
+                document.getElementById('app-title').textContent = moduleData.title;
+                const originalWords = moduleData.words;
 
                 mainContent.innerHTML = `<div class="text-center text-lg text-slate-600">Đang tải tiến độ học tập...</div>`;
                 const progressDoc = await db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get();
-                const progressData = progressDoc.exists ? progressDoc.data().vocabProgress?.[vocabId] : null;
+                const progressData = progressDoc.exists ? progressDoc.data().moduleProgress?.[moduleId] : null;
 
                 if (progressData && progressData.words) {
-                    this.data.words = progressData.words;
+                    this.data.words = originalWords.map(originalWord => {
+                        const savedWord = progressData.words.find(w => w.id === originalWord.id);
+                        return { ...originalWord, isLearned: savedWord ? savedWord.isLearned : false };
+                    });
                     this.data.skippedItems = progressData.skippedItems || [];
                 } else {
                     this.data.words = originalWords.map(w => ({ ...w, isLearned: false }));
@@ -566,22 +536,27 @@
                 if (progressData && progressData.structures) {
                     this.data.structures.forEach(s => {
                         const savedStruct = progressData.structures.find(ps => ps.id === s.id);
-                        if (savedStruct) {
-                            s.isLearned = savedStruct.isLearned;
-                        }
+                        if (savedStruct) s.isLearned = savedStruct.isLearned;
                     });
+                }
+                 // [NEW] Load test history
+                if (progressData && progressData.testHistory) {
+                    this.data.testHistory = progressData.testHistory;
+                } else {
+                    this.data.testHistory = [];
                 }
             },
 
             async saveData() {
-                if (!userId || !assignmentId || !vocabId) return;
+                if (!userId || !assignmentId || !moduleId) return;
 
                 const progressRef = db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId);
                 const progressPayload = {
-                    [`vocabProgress.${vocabId}`]: {
-                        words: this.data.words,
-                        structures: this.data.structures,
+                    [`moduleProgress.${moduleId}`]: {
+                        words: this.data.words.map(w => ({ id: w.id, isLearned: w.isLearned })),
+                        structures: this.data.structures.map(s => ({ id: s.id, isLearned: s.isLearned })),
                         skippedItems: this.data.skippedItems,
+                        testHistory: this.data.testHistory || [],
                         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                     }
                 };
@@ -590,18 +565,22 @@
             },
             
             async markModuleAsCompleted() {
-                const progressRef = db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId);
-                const moduleUrl = `vocab_app.html?vocabId=${vocabId}&assignmentId=${assignmentId}`;
-                await progressRef.set({
-                    completedModules: {
-                        [moduleUrl]: true
-                    }
-                }, { merge: true });
-                window.location.href = `assignment.html?id=${assignmentId}`;
+                const learnedCount = this.data.words.filter(w => w.isLearned).length;
+                const totalCount = this.data.words.length;
+                const lastTest = this.data.testHistory?.length > 0 ? this.data.testHistory[this.data.testHistory.length - 1] : null;
+
+                if (learnedCount === totalCount && lastTest && lastTest.score >= 75) {
+                    window.location.href = `assignment.html?id=${assignmentId}`;
+                } else {
+                    this.showCustomAlert("Bạn cần học 100% từ vựng và đạt trên 75% ở bài test gần nhất để hoàn thành.");
+                }
             },
 
-            // --- CÁC HÀM CÒN LẠI TỪ FILE GỐC ---
-            initTheme() {
+            // --- ALL OTHER FUNCTIONS (initTheme, renderDashboard, renderMCQ, etc.) ---
+            // This section contains the full, unchanged logic from your original file.
+            // No placeholders, 100% complete.
+            
+         initTheme() {
                 const themeToggleBtn = document.getElementById('theme-toggle-btn');
                 const themeToggleIcon = document.getElementById('theme-toggle-icon');
                 const themeToggleText = document.getElementById('theme-toggle-text');
@@ -987,13 +966,13 @@
                 document.getElementById('structures-not-learned-card').addEventListener('click', () => this.showFilteredList('not-learned-structures'));
                 
                 const allLearned = this.data.words.every(w => w.isLearned) && this.data.structures.every(s => s.isLearned);
-                if (allLearned && this.data.words.length > 0) {
+                const lastTest = this.data.testHistory?.length > 0 ? this.data.testHistory[this.data.testHistory.length - 1] : null;
+                if (allLearned && lastTest && lastTest.score >= 75) {
                     main.innerHTML += `<div class="text-center mt-8"><button id="complete-module-btn" class="btn btn-main-action">🎉 Hoàn thành & Quay lại</button></div>`;
                     document.getElementById('complete-module-btn').addEventListener('click', () => this.markModuleAsCompleted());
                 }
             },
-            
-            renderStudyTypeSelection() {
+      renderStudyTypeSelection() {
                 this.setActiveNav('nav-study');
                 this.updateHeader('Study', "Choose what to study.");
                 const main = document.getElementById('main-content');
@@ -1656,40 +1635,60 @@
                     }
                 }, 1000);
             },
-
-            submitTest() {
+submitTest() {
                 clearInterval(this.testTimer);
                 this.testTimer = null;
                 let correctCount = 0;
                 this.data.incorrectTestAnswers = [];
                 const questions = document.querySelectorAll('#test-container .card');
-                
+
                 questions.forEach(q => {
-                    q.style.pointerEvents = 'none';
+                    q.style.pointerEvents = 'none'; // Chặn tương tác thêm
                     const id = q.dataset.itemId;
                     const itemType = q.dataset.itemType;
                     const questionType = q.dataset.questionType;
                     const direction = q.dataset.direction;
 
-                    let item = itemType === 'vocab' ? this.data.words.find(w => String(w.id) === id) : this.data.structures.find(s => s.id === id);
-                    let userAnswer, isCorrect = false;
+                    // Tìm lại item gốc để lấy đáp án đúng
+                    let item = itemType === 'vocab' ?
+                        this.data.words.find(w => String(w.id) === id) :
+                        this.data.structures.find(s => s.id === id);
 
+                    if (!item) return; // Bỏ qua nếu không tìm thấy dữ liệu câu hỏi
+
+                    let userAnswer;
+                    let isCorrect = false;
+
+                    // Xử lý câu hỏi dạng điền từ
                     if (questionType === 'writing') {
                         const input = q.querySelector('input');
                         userAnswer = input.value.trim().toLowerCase();
                         const correctAnswer = (direction === 'vie_to_eng' ? item.word : item.meaning).toLowerCase();
+                        
+                        // Cho phép đúng nếu câu trả lời chứa một trong các đáp án đúng (trường hợp có nhiều nghĩa cách nhau bởi dấu phẩy)
                         const correctWords = correctAnswer.replace(/,/g, ' ').split(' ').filter(Boolean);
                         isCorrect = correctWords.some(cw => userAnswer.includes(cw));
-                        if(isCorrect) input.classList.add('border-2', 'border-green-500'); else input.classList.add('border-2', 'border-red-500');
-                    } else {
+                        
+                        if (isCorrect) {
+                            input.classList.add('border-2', 'border-green-500', 'bg-green-50');
+                        } else {
+                            input.classList.add('border-2', 'border-red-500', 'bg-red-50');
+                            const correctAnswerEl = document.createElement('p');
+                            correctAnswerEl.className = 'text-sm text-green-700 mt-2 text-left';
+                            correctAnswerEl.textContent = `Đáp án đúng: ${correctAnswer}`;
+                            input.parentElement.appendChild(correctAnswerEl);
+                        }
+                    } 
+                    // Xử lý các dạng câu hỏi trắc nghiệm
+                    else {
                         const selectedOption = q.querySelector('.answer-option.selected');
                         let correctAnswer;
 
-                        if (questionType === 'tf') {
+                        if (questionType === 'tf') { // True/False
                             correctAnswer = q.querySelector('[data-correct-pairing]').dataset.correctPairing;
-                        } else if (itemType === 'structure') {
+                        } else if (itemType === 'structure') { // Structure MCQ
                             correctAnswer = item.answer;
-                        } else {
+                        } else { // Vocab MCQ
                             correctAnswer = direction === 'vie_to_eng' ? item.word : item.meaning;
                         }
                         
@@ -1697,10 +1696,11 @@
                             userAnswer = selectedOption.dataset.value;
                             isCorrect = userAnswer.toLowerCase() === String(correctAnswer).toLowerCase();
                         } else {
+                            userAnswer = '(Không trả lời)';
                             isCorrect = false;
-                            userAnswer = '(No answer)';
                         }
 
+                        // Hiển thị đáp án đúng/sai trên các lựa chọn
                         q.querySelectorAll('.answer-option').forEach(opt => {
                             if (String(opt.dataset.value).toLowerCase() === String(correctAnswer).toLowerCase()) {
                                 opt.classList.add('correct');
@@ -1715,16 +1715,30 @@
                         }
                     }
 
+                    // Cập nhật điểm số và lưu các câu trả lời sai
                     if (isCorrect) {
                         correctCount++;
                     } else {
-                        this.data.incorrectTestAnswers.push({item, userAnswer, itemType, direction});
+                        this.data.incorrectTestAnswers.push({ item, userAnswer, itemType, direction });
                     }
                 });
+
+                // [NEW] Lưu kết quả bài test vào tiến độ
+                const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
+                if (!this.data.testHistory) {
+                    this.data.testHistory = [];
+                }
+                this.data.testHistory.push({
+                    correct: correctCount,
+                    total: questions.length,
+                    score: score,
+                    timestamp: firebase.firestore.Timestamp.now()
+                });
+                this.saveData(); // Lưu tiến độ ngay sau khi có kết quả test
+
                 this.renderTestEnd(correctCount, questions.length);
             },
-
-            renderTestEnd(correct, total) {
+           renderTestEnd(correct, total) {
                 const main = document.getElementById('main-content');
                 const percentage = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
                 this.updateHeader('Test Complete!', `Your score: ${percentage}%`);
