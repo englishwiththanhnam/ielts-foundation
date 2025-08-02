@@ -9,69 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Be Vietnam Pro', sans-serif; }
-
-        /* --- Sidebar & Common --- */
         .sidebar-link { transition: all 0.2s ease-in-out; }
         .sidebar-link:hover { background-color: #4f46e5; color: white; }
         .sidebar-link.active { background-color: #4f46e5; color: white; font-weight: 600; }
-        .list-item:hover { background-color: #f3f4f6; }
-        .list-item.active { background-color: #eef2ff; border-color: #6366f1; }
-
-        /* --- Curriculum Tree --- */
-        .tree-container ul {
-            padding-left: 20px;
-            border-left: 1px dashed #ccc;
-        }
-        .tree-container li {
-            list-style-type: none;
-            position: relative;
-        }
-        .tree-node {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .tree-node:hover {
-            background-color: #f3f4f6;
-        }
-        .tree-node-main {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-        .tree-node .toggle-icon {
-            margin-right: 8px;
-            width: 16px;
-            display: inline-block;
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        .tree-node.collapsed .toggle-icon {
-            transform: rotate(-90deg);
-        }
-        .tree-container .nested-list {
-            display: block;
-        }
-        .tree-container .nested-list.hidden {
-            display: none;
-        }
-        .context-menu-trigger {
-            padding: 4px 8px;
-            border-radius: 4px;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-        .tree-node:hover .context-menu-trigger {
-            opacity: 1;
-        }
-        .context-menu-trigger:hover {
-            background-color: #e5e7eb;
-        }
-
-        /* --- Animation --- */
         .animate-scale-in { animation:scaleIn 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
         @keyframes scaleIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
     </style>
@@ -83,17 +23,14 @@
                 <h2 class="text-2xl font-semibold">Admin Panel</h2>
             </div>
             <nav class="mt-10">
-                <a id="nav-content" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8 active">
-                    <i class="fas fa-book mr-3"></i> Quản Lý Giáo Trình
+                <a id="nav-assignments" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8 active">
+                    <i class="fas fa-tasks mr-3"></i> Giao Bài tập
                 </a>
-                <a id="nav-classes" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
-                    <i class="fas fa-school mr-3"></i> Quản Lý Lớp Học
+                <a id="nav-upload" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
+                    <i class="fas fa-upload mr-3"></i> Tải lên Học phần
                 </a>
                 <a id="nav-students" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
-                    <i class="fas fa-user-graduate mr-3"></i> Quản Lý Học Sinh
-                </a>
-                <a id="nav-assignments" href="#" class="sidebar-link mt-1 flex items-center py-2 px-8">
-                    <i class="fas fa-tasks mr-3"></i> Giao Bài Tập
+                    <i class="fas fa-user-graduate mr-3"></i> Quản lý Học sinh
                 </a>
             </nav>
         </div>
@@ -101,7 +38,7 @@
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="flex justify-between items-center p-6 bg-white border-b-2 border-gray-200">
                 <div>
-                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">Quản Lý Giáo Trình</h1>
+                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">Giao Bài tập</h1>
                 </div>
                 <div>
                     <span id="admin-name" class="mr-4"></span>
@@ -144,7 +81,7 @@
             db.collection('users').doc(user.uid).get().then(doc => {
                 if (doc.exists && doc.data().role === 'admin') {
                     adminName.textContent = user.displayName || user.email;
-                    document.querySelector('#nav-content').click(); // Mặc định vào trang quản lý giáo trình
+                    document.querySelector('#nav-assignments').click(); // Mặc định vào trang Giao bài tập
                 } else {
                     alert('Tài khoản không có quyền Admin.');
                     auth.signOut().finally(() => window.location.href = 'login.html');
@@ -156,60 +93,7 @@
     });
 
     // ===================================================================================
-    // SECTION II: UI HELPERS
-    // ===================================================================================
-    function showInputModal(title, label, defaultValue = '', callback) {
-        document.getElementById('input-modal')?.remove();
-        const modalHTML = `
-            <div id="input-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md animate-scale-in">
-                    <h3 class="text-lg font-bold mb-4">${title}</h3>
-                    <label class="block mb-2 text-sm font-medium">${label}</label>
-                    <input id="modal-input-field" type="text" class="w-full p-2 border rounded" value="${defaultValue}">
-                    <div class="mt-4 flex justify-end gap-2">
-                        <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded">Hủy</button>
-                        <button id="modal-confirm-btn" class="px-4 py-2 bg-indigo-600 text-white rounded">Xác nhận</button>
-                    </div>
-                </div>
-            </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-        const modal = document.getElementById('input-modal');
-        const inputField = document.getElementById('modal-input-field');
-        inputField.focus();
-        inputField.select();
-
-        const closeModal = () => modal.remove();
-        document.getElementById('modal-confirm-btn').onclick = () => { callback(inputField.value); closeModal(); };
-        document.getElementById('modal-cancel-btn').onclick = closeModal;
-    }
-
-    function showModuleTypeModal(callback) {
-        document.getElementById('module-type-modal')?.remove();
-        const modalHTML = `
-            <div id="module-type-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md animate-scale-in">
-                    <h3 class="text-lg font-bold mb-4">Chọn loại học phần</h3>
-                    <div class="space-y-3">
-                       <button data-type="vocab" class="w-full text-left p-3 border rounded hover:bg-gray-100">📖 Từ vựng</button>
-                       <button data-type="exam" class="w-full text-left p-3 border rounded hover:bg-gray-100 cursor-not-allowed opacity-50" disabled>✍️ Đề thi (Sắp ra mắt)</button>
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                         <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded">Hủy</button>
-                    </div>
-                </div>
-            </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        const modal = document.getElementById('module-type-modal');
-        modal.querySelectorAll('button[data-type]').forEach(btn => {
-            if (btn.disabled) return;
-            btn.onclick = () => { callback(btn.dataset.type); modal.remove(); }
-        });
-        document.getElementById('modal-cancel-btn').onclick = () => modal.remove();
-    }
-
-    // ===================================================================================
-    // SECTION III: DATA PROCESSING HELPERS (from Vocab Tool)
+    // SECTION II: DATA PROCESSING HELPERS (from Vocab Tool)
     // ===================================================================================
     function processPastedDataForSave() {
         const words = (document.getElementById('col-word').value.trim() || '').split('\n');
@@ -222,13 +106,8 @@
         const meaningsStructure = structuresCombined.map(line => line.split('\t')[1] || '');
 
         if (words.length === 1 && words[0] === '') return { vocabData: [], structureData: [] };
-
-        if (words.length !== types.length || words.length !== pronunciations.length || words.length !== meaningsVocab.length) {
-            throw new Error("Số dòng trong các cột từ vựng không khớp nhau!");
-        }
-        if (structures.length === 1 && structures[0] !== '' && structures.length !== meaningsStructure.length) {
-             throw new Error("Số dòng trong các cột cấu trúc không khớp nhau!");
-        }
+        if (words.length !== types.length || words.length !== pronunciations.length || words.length !== meaningsVocab.length) throw new Error("Số dòng trong các cột từ vựng không khớp nhau!");
+        if (structures.length === 1 && structures[0] !== '' && structures.length !== meaningsStructure.length) throw new Error("Số dòng trong các cột cấu trúc không khớp nhau!");
 
         const vocabData = words.map((word, index) => ({ word: word.trim(), type: (types[index] || '').trim(), pronunciation: (pronunciations[index] || '').trim(), meaning: (meaningsVocab[index] || '').trim() }));
         const structureData = structures[0] === '' ? [] : structures.map((structure, index) => ({ 'text': structure.trim(), 'meaning': (meaningsStructure[index] || '').trim() }));
@@ -253,420 +132,220 @@
             }
             return acc;
         }, {});
-
-        return vocabData.map((vocabItem, index) => ({
-            id: index + 1,
-            word: vocabItem.word,
-            type: vocabItem.type,
-            pronunciation: vocabItem.pronunciation,
-            meaning: vocabItem.meaning,
-            structure: (structureGroups[vocabItem.word] || []).join('; ')
-        }));
+        return vocabData.map((vocabItem, index) => ({ id: index + 1, word: vocabItem.word, type: vocabItem.type, pronunciation: vocabItem.pronunciation, meaning: vocabItem.meaning, structure: (structureGroups[vocabItem.word] || []).join('; ') }));
     }
 
     // ===================================================================================
-    // SECTION IV: FIRESTORE CRUD HELPERS
+    // SECTION III: MAIN RENDER FUNCTIONS
     // ===================================================================================
-    async function handleAddItem(type, parentId, parentName) {
-        if (type === 'unit') {
-            showInputModal(`Thêm Unit mới vào "${parentName}"`, 'Tên Unit:', '', async (newUnitName) => {
-                if (!newUnitName.trim()) return;
-                const unitCountSnap = await db.collection('new_units').where('curriculumId', '==', parentId).get();
-                await db.collection('new_units').add({
-                    name: newUnitName.trim(),
-                    curriculumId: parentId,
-                    order: unitCountSnap.size + 1
-                });
-                renderContentManagement();
+
+    /**
+     * MODULE 1: Giao bài tập (Mặc định)
+     */
+    async function renderAssignmentCreator() {
+        pageTitle.textContent = 'Giao Bài tập';
+        mainContent.innerHTML = `<p>Đang tải dữ liệu lớp học và học phần...</p>`;
+        
+        try {
+            const [classesSnap, modulesSnap] = await Promise.all([
+                db.collection("classes").get(),
+                db.collection("modules_content").get() // Collection mới để lưu học phần
+            ]);
+
+            const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            const classOptions = classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+            const moduleCheckboxes = modules.map(m => `
+                <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                    <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded module-checkbox" value="${m.id}">
+                    <span class="ml-3 text-sm text-gray-800">${m.title}</span>
+                </label>
+            `).join('');
+
+            mainContent.innerHTML = `
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Giao cho lớp:</label>
+                                <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                    <option value="">-- Chọn một lớp --</option>
+                                    ${classOptions}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="deadline-date" class="block text-sm font-medium text-gray-700 mb-1">Hạn chót (Deadline):</label>
+                                <input type="date" id="deadline-date" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
+                                <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày ${new Date().toLocaleDateString('vi-VN')}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t pt-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Chọn Học Phần Để Giao</h2>
+                        <div class="space-y-2 p-4 bg-gray-50 rounded-md border h-72 overflow-y-auto">
+                            ${moduleCheckboxes || '<p class="text-gray-500">Chưa có học phần nào được tải lên.</p>'}
+                        </div>
+                    </div>
+                    <button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
+                        <i class="fas fa-paper-plane mr-2"></i> Giao Bài Tập
+                    </button>
+                </div>
+            </div>`;
+
+            document.getElementById('create-assignment-btn').addEventListener('click', async () => {
+                const classId = document.getElementById('class-selector').value;
+                const title = document.getElementById('assignment-title').value.trim();
+                const deadlineStr = document.getElementById('deadline-date').value;
+
+                if (!classId || !title || !deadlineStr) {
+                    return alert('Vui lòng chọn lớp, nhập tiêu đề và deadline.');
+                }
+
+                const deadline = firebase.firestore.Timestamp.fromDate(new Date(deadlineStr));
+                const selectedModuleIds = Array.from(document.querySelectorAll('.module-checkbox:checked')).map(el => el.value);
+
+                if (selectedModuleIds.length === 0) {
+                    return alert('Vui lòng chọn ít nhất một học phần để giao.');
+                }
+                
+                try {
+                    await db.collection('assignments').add({
+                        classId, title, deadline, moduleIds: selectedModuleIds, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert('Giao bài tập thành công!');
+                    document.getElementById('nav-assignments').click(); // Refresh lại trang
+                } catch (error) {
+                    console.error("Lỗi khi giao bài: ", error);
+                    alert("Đã có lỗi xảy ra. Vui lòng thử lại.");
+                }
             });
-        } else if (type === 'module') {
-            showModuleTypeModal((moduleType) => {
-                if (moduleType === 'vocab') renderVocabCreator(parentId);
-            });
+
+        } catch (error) {
+            mainContent.innerHTML = `<p class="text-red-500">Lỗi tải dữ liệu: ${error.message}</p>`;
         }
     }
 
-    async function handleRenameItem(type, id, oldName) {
-        showInputModal(`Đổi tên cho "${oldName}"`, 'Tên mới:', oldName, async (newName) => {
-            if (!newName.trim() || newName.trim() === oldName) return;
-            const collectionName = type === 'curriculum' ? 'new_curriculums' : (type === 'unit' ? 'new_units' : 'new_modules');
-            const fieldToUpdate = type === 'module' ? 'title' : 'name';
-            await db.collection(collectionName).doc(id).update({ [fieldToUpdate]: newName.trim() });
-            renderContentManagement();
+    /**
+     * MODULE 2: Tải lên học phần
+     */
+    function renderModuleUploader() {
+        pageTitle.textContent = 'Tải lên Học phần';
+        mainContent.innerHTML = `
+            <div class="max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+                <h1 class="text-3xl font-bold text-indigo-600 mb-2">Công cụ Tạo Học Phần Từ Vựng</h1>
+                <p class="text-gray-600 mb-8">Dữ liệu sau khi xử lý sẽ được lưu vào kho học phần chung.</p>
+                <div class="space-y-6">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề của Học phần:</label><input type="text" id="module-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Unit 1: Family Vocab"></div>
+                    <div class="border-t pt-6"><h2 class="text-xl font-semibold text-gray-800 mb-4">Dán dữ liệu Từ vựng (Từng cột một)</h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><div><label for="col-word" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Word'</label><textarea id="col-word" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea></div><div><label for="col-type" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Type'</label><textarea id="col-type" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea></div><div><label for="col-pronunciation" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Pronunciation'</label><textarea id="col-pronunciation" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea></div><div><label for="col-meaning-vocab" class="block text-sm font-medium text-gray-700 mb-1">Cột 'Meaning'</label><textarea id="col-meaning-vocab" rows="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea></div></div></div>
+                    <div class="border-t pt-6"><h2 class="text-xl font-semibold text-gray-800 mb-4">Dán dữ liệu Cấu trúc (2 cột từ Excel/Sheets)</h2><textarea id="col-structures-combined" rows="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea></div>
+                    <button id="process-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all"><i class="fas fa-save mr-2"></i> Lưu vào Kho học phần</button>
+                    <div id="status" class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm">Trạng thái: Sẵn sàng.</div>
+                </div>
+            </div>`;
+        
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            const title = document.getElementById('module-title').value.trim();
+            const statusEl = document.getElementById('status');
+            if (!title) return alert("Vui lòng điền Tiêu đề của học phần.");
+            
+            try {
+                const { vocabData, structureData } = processPastedDataForSave();
+                if (vocabData.length === 0) throw new Error("Không có dữ liệu từ vựng.");
+
+                statusEl.textContent = 'Đang xử lý dữ liệu thông minh...';
+                const processedWords = processDataSmartForSave(vocabData, structureData);
+                
+                statusEl.textContent = 'Đang tải lên Firestore...';
+                await db.collection('modules_content').add({
+                    title: title,
+                    type: 'vocab',
+                    words: processedWords
+                });
+                
+                statusEl.innerHTML = `🎉 <b>THÀNH CÔNG!</b> Đã lưu học phần "${title}" vào kho.`;
+                alert('Tải lên học phần thành công!');
+                // Xóa form để chuẩn bị cho lần nhập liệu tiếp theo
+                document.getElementById('module-title').value = '';
+                document.getElementById('col-word').value = '';
+                document.getElementById('col-type').value = '';
+                document.getElementById('col-pronunciation').value = '';
+                document.getElementById('col-meaning-vocab').value = '';
+                document.getElementById('col-structures-combined').value = '';
+
+            } catch (error) {
+                statusEl.textContent = `Lỗi: ${error.message}`;
+                console.error(error);
+            }
         });
     }
 
-    async function handleDeleteItem(type, id, name) {
-        if (!confirm(`BẠN CÓ CHẮC MUỐN XÓA "${name}"?\nHành động này sẽ xóa vĩnh viễn mục này và TẤT CẢ các mục con bên trong. KHÔNG THỂ HOÀN TÁC.`)) return;
-        
-        try {
-            if (type === 'curriculum') await deleteCurriculum(id);
-            else if (type === 'unit') await deleteUnit(id);
-            else if (type === 'module') await deleteModule(id);
-            alert(`Đã xóa "${name}" thành công.`);
-            renderContentManagement();
-        } catch (error) {
-            console.error(`Lỗi khi xóa ${type}:`, error);
-            alert(`Có lỗi xảy ra khi xóa: ${error.message}`);
-        }
-    }
-
-    async function deleteModule(moduleId) {
-        const moduleDoc = await db.collection('new_modules').doc(moduleId).get();
-        if (!moduleDoc.exists) return;
-        const { type, contentId } = moduleDoc.data();
-        
-        if (type === 'vocab' && contentId) await db.collection('vocab_sets').doc(contentId).delete();
-        await db.collection('new_modules').doc(moduleId).delete();
-    }
-
-    async function deleteUnit(unitId) {
-        const modulesSnap = await db.collection('new_modules').where('unitId', '==', unitId).get();
-        const deletePromises = modulesSnap.docs.map(doc => deleteModule(doc.id));
-        await Promise.all(deletePromises);
-        await db.collection('new_units').doc(unitId).delete();
-    }
-
-    async function deleteCurriculum(curriculumId) {
-        const unitsSnap = await db.collection('new_units').where('curriculumId', '==', curriculumId).get();
-        const deletePromises = unitsSnap.docs.map(doc => deleteUnit(doc.id));
-        await Promise.all(deletePromises);
-        await db.collection('new_curriculums').doc(curriculumId).delete();
-    }
-
-    // ===================================================================================
-    // SECTION V: MAIN RENDER FUNCTIONS
-    // ===================================================================================
-
-    // -----------------------------------------------------------------------------------
-    // MODULE 1: CONTENT MANAGEMENT
-    // -----------------------------------------------------------------------------------
-    async function renderContentManagement() {
-        pageTitle.textContent = 'Quản Lý Giáo Trình';
-        mainContent.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-                <div id="content-tree-panel" class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
-                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold">Cấu trúc Giáo trình</h2><button id="add-curriculum-btn" class="px-3 py-1 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"><i class="fas fa-plus mr-1"></i> Mới</button></div>
-                    <div id="tree-container" class="tree-container overflow-y-auto flex-grow"><p>Đang tải...</p></div>
-                </div>
-                <div id="content-detail-panel" class="md:col-span-2 bg-white rounded-lg shadow p-6"><p class="text-gray-500">Chọn một mục từ cây thư mục hoặc tạo mới để bắt đầu.</p></div>
-            </div>`;
-
-        try {
-            const [curriculumsSnap, unitsSnap, modulesSnap] = await Promise.all([
-                db.collection('new_curriculums').orderBy('name').get(),
-                db.collection('new_units').orderBy('order').get(),
-                db.collection('new_modules').orderBy('order').get()
-            ]);
-
-            const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const units = unitsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            const curriculumMap = new Map(curriculums.map(c => [c.id, { ...c, units: [] }]));
-            const unitMap = new Map(units.map(u => [u.id, { ...u, modules: [] }]));
-
-            modules.forEach(m => { if (unitMap.has(m.unitId)) unitMap.get(m.unitId).modules.push(m); });
-            units.forEach(u => { if (curriculumMap.has(u.curriculumId)) curriculumMap.get(u.curriculumId).units.push(unitMap.get(u.id)); });
-            
-            const treeContainer = document.getElementById('tree-container');
-            if (curriculumMap.size === 0) {
-                treeContainer.innerHTML = '<p class="text-sm text-gray-500">Chưa có giáo trình nào. Nhấn "Mới" để tạo.</p>';
-                return;
-            }
-
-            let treeHtml = '<ul>';
-            for (const curriculum of curriculumMap.values()) {
-                let unitsHtml = '<ul class="nested-list">';
-                for (const unit of curriculum.units) {
-                    let modulesHtml = '<ul class="nested-list">';
-                    for (const module of unit.modules) {
-                        const moduleIcon = module.type === 'vocab' ? '📖' : '📄';
-                        modulesHtml += `<li><div class="tree-node" data-id="${module.id}" data-type="module" data-content-id="${module.contentId}" data-module-type="${module.type}"><div class="tree-node-main"><span class="node-name">${moduleIcon} ${module.title}</span></div><button class="context-menu-trigger"><i class="fas fa-ellipsis-h"></i></button></div></li>`;
-                    }
-                    modulesHtml += '</ul>';
-                    unitsHtml += `<li><div class="tree-node" data-id="${unit.id}" data-type="unit"><div class="tree-node-main"><span class="toggle-icon"><i class="fas fa-caret-down"></i></span><span class="node-name">📄 ${unit.name}</span></div><button class="context-menu-trigger"><i class="fas fa-ellipsis-h"></i></button></div>${modulesHtml}</li>`;
-                }
-                unitsHtml += '</ul>';
-                treeHtml += `<li><div class="tree-node" data-id="${curriculum.id}" data-type="curriculum"><div class="tree-node-main"><span class="toggle-icon"><i class="fas fa-caret-down"></i></span><span class="node-name">📁 ${curriculum.name}</span></div><button class="context-menu-trigger"><i class="fas fa-ellipsis-h"></i></button></div>${unitsHtml}</li>`;
-            }
-            treeHtml += '</ul>';
-            treeContainer.innerHTML = treeHtml;
-
-        } catch (error) {
-            console.error("Lỗi khi dựng cây thư mục:", error);
-            document.getElementById('tree-container').innerHTML = '<p class="text-red-500">Không thể tải cấu trúc giáo trình.</p>';
-        }
-    }
-
-    function renderVocabCreator(unitId) {
-        const detailPanel = document.getElementById('content-detail-panel');
-        detailPanel.innerHTML = `
-            <h2 class="text-2xl font-bold mb-4">Tạo Học phần Từ vựng mới</h2>
-            <div class="space-y-4"><input type="text" id="vocab-title" class="w-full p-2 border rounded font-semibold" placeholder="Nhập tiêu đề học phần..."><div class="grid grid-cols-1 md:grid-cols-4 gap-2"><div><label class="text-sm font-medium">Word</label><textarea id="col-word" rows="12" class="w-full p-2 border rounded text-sm"></textarea></div><div><label class="text-sm font-medium">Type</label><textarea id="col-type" rows="12" class="w-full p-2 border rounded text-sm"></textarea></div><div><label class="text-sm font-medium">Pronunciation</label><textarea id="col-pronunciation" rows="12" class="w-full p-2 border rounded text-sm"></textarea></div><div><label class="text-sm font-medium">Meaning</label><textarea id="col-meaning-vocab" rows="12" class="w-full p-2 border rounded text-sm"></textarea></div></div><div><label class="block text-sm font-medium">Cấu trúc/Idioms (Dán cả 2 cột từ Excel/Sheets vào đây)</label><textarea id="col-structures-combined" rows="8" class="w-full p-2 border rounded text-sm"></textarea></div><div class="flex justify-end gap-2"><button id="cancel-creation-btn" class="px-6 py-2 bg-gray-200 rounded">Hủy</button><button id="save-new-vocab-btn" class="px-6 py-2 bg-green-600 text-white rounded">Lưu học phần</button></div></div>`;
-    }
-
-    async function renderVocabEditor(moduleId, contentId) {
-        const detailPanel = document.getElementById('content-detail-panel');
-        detailPanel.innerHTML = `<p>Đang tải trình chỉnh sửa...</p>`;
-        try {
-            const doc = await db.collection('vocab_sets').doc(contentId).get();
-            if (!doc.exists) throw new Error('Không tìm thấy nội dung học phần.');
-            const data = doc.data();
-            const words = data.words || [];
-
-            const wordsCol = words.map(w => w.word || '').join('\n');
-            const typesCol = words.map(w => w.type || '').join('\n');
-            const pronunciationsCol = words.map(w => w.pronunciation || '').join('\n');
-            const meaningsVocabCol = words.map(w => w.meaning || '').join('\n');
-            let combinedStructures = [];
-            words.forEach(word => { if(word.structure) { word.structure.split(';').forEach(s => { if(s.trim()) combinedStructures.push(s.trim().replace(': ', '\t')); }); } });
-
-            detailPanel.innerHTML = `<h2 class="text-2xl font-bold mb-4">Sửa Học phần Từ vựng</h2><div class="space-y-4"><input type="text" id="vocab-title" class="w-full p-2 border rounded font-semibold" value="${data.title}"><div class="grid grid-cols-1 md:grid-cols-4 gap-2"><div><label class="text-sm font-medium">Word</label><textarea id="col-word" rows="12" class="w-full p-2 border rounded text-sm">${wordsCol}</textarea></div><div><label class="text-sm font-medium">Type</label><textarea id="col-type" rows="12" class="w-full p-2 border rounded text-sm">${typesCol}</textarea></div><div><label class="text-sm font-medium">Pronunciation</label><textarea id="col-pronunciation" rows="12" class="w-full p-2 border rounded text-sm">${pronunciationsCol}</textarea></div><div><label class="text-sm font-medium">Meaning</label><textarea id="col-meaning-vocab" rows="12" class="w-full p-2 border rounded text-sm">${meaningsVocabCol}</textarea></div></div><div><label class="block text-sm font-medium">Cấu trúc/Idioms (Dán cả 2 cột từ Excel/Sheets vào đây)</label><textarea id="col-structures-combined" rows="8" class="w-full p-2 border rounded text-sm">${combinedStructures.join('\n')}</textarea></div><div class="flex justify-end gap-2"><button id="cancel-edit-btn" class="px-6 py-2 bg-gray-200 rounded">Hủy</button><button id="update-vocab-btn" class="px-6 py-2 bg-blue-600 text-white rounded">Lưu thay đổi</button></div></div>`;
-        } catch (error) {
-            detailPanel.innerHTML = `<p class="text-red-500">Lỗi: ${error.message}</p>`;
-        }
-    }
-
-    // -----------------------------------------------------------------------------------
-    // MODULE 2: CLASS MANAGEMENT
-    // -----------------------------------------------------------------------------------
-    async function renderClassManagement() {
-        pageTitle.textContent = 'Quản Lý Lớp Học';
-        mainContent.innerHTML = `<p>Đang tải...</p>`;
-
-        const [classesSnap, curriculumsSnap] = await Promise.all([
-            db.collection('classes').get(),
-            db.collection('new_curriculums').get()
-        ]);
-        const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        let classListHtml = classes.map(c => `<div class="list-item border-l-4 border-transparent p-3 cursor-pointer" data-class-id="${c.id}"><p class="font-bold text-gray-800">${c.className}</p></div>`).join('');
-        let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-        mainContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full"><div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full"><h2 class="text-xl font-bold mb-4">Danh sách Lớp học</h2><div class="mb-4"><input id="new-class-name" class="w-full p-2 border rounded mb-2" placeholder="Tên lớp mới..."><select id="new-class-curriculum" class="w-full p-2 border rounded mb-2"><option value="">-- Chọn giáo trình --</option>${curriculumOptions}</select><button id="add-class-btn" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Thêm Lớp Mới</button></div><div id="class-list" class="overflow-y-auto flex-grow">${classListHtml}</div></div><div id="class-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6"><p class="text-gray-500">Chọn một lớp học để xem chi tiết.</p></div></div>`;
-    }
-
-    async function renderClassDetail(classId) {
-        const detailView = document.getElementById('class-detail');
-        detailView.innerHTML = `<p>Đang tải chi tiết lớp học...</p>`;
-
-        const [classDoc, studentsSnap] = await Promise.all([
-            db.collection('classes').doc(classId).get(),
-            db.collection('users').where('role', '==', 'student').get()
-        ]);
-        const classData = { id: classDoc.id, ...classDoc.data() };
-        const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const studentsInClass = allStudents.filter(s => s.enrolledClasses?.includes(classId));
-        const studentsNotInClass = allStudents.filter(s => !s.enrolledClasses?.includes(classId));
-
-        let studentsInClassHtml = studentsInClass.map(s => `<tr><td class="py-2 pr-4">${s.displayName}</td><td class="py-2 pr-4">${s.email}</td><td class="text-right"><button class="remove-student-btn text-red-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Xóa</button></td></tr>`).join('');
-        let studentsNotInClassHtml = studentsNotInClass.map(s => `<tr><td class="py-2 pr-4">${s.displayName}</td><td class="py-2 pr-4">${s.email}</td><td class="text-right"><button class="add-student-btn text-green-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Thêm</button></td></tr>`).join('');
-
-        detailView.innerHTML = `<div class="flex justify-between items-start"><h2 class="text-2xl font-bold mb-6">${classData.className}</h2><button id="delete-class-btn" class="text-red-500 hover:text-red-700" data-id="${classId}"><i class="fas fa-trash-alt"></i> Xóa Lớp</button></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div><h3 class="font-semibold mb-2">Học sinh trong lớp (${studentsInClass.length})</h3><table class="w-full text-sm">${studentsInClassHtml}</table></div><div><h3 class="font-semibold mb-2">Học sinh chưa có trong lớp</h3><table class="w-full text-sm">${studentsNotInClassHtml}</table></div></div>`;
-    }
-
-    // -----------------------------------------------------------------------------------
-    // MODULE 3: STUDENT MANAGEMENT
-    // -----------------------------------------------------------------------------------
+    /**
+     * MODULE 3: Quản lý học sinh
+     */
     async function renderStudentManagement() {
-        pageTitle.textContent = 'Quản Lý Học Sinh';
-        mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md"><p class="text-gray-600">Module này đang trong quá trình phát triển.</p></div>`;
-    }
+        pageTitle.textContent = 'Quản lý Học sinh';
+        mainContent.innerHTML = `<p>Đang tải danh sách học sinh...</p>`;
 
-    // -----------------------------------------------------------------------------------
-    // MODULE 4: ASSIGNMENT MANAGEMENT
-    // -----------------------------------------------------------------------------------
-    async function renderAssignmentManagement() {
-        pageTitle.textContent = 'Giao Bài Tập';
-        mainContent.innerHTML = `<p>Đang tải...</p>`;
+        try {
+            const studentsSnap = await db.collection('users').where('role', '==', 'student').get();
+            const students = studentsSnap.docs.map(doc => doc.data());
 
-        const classesSnap = await db.collection("classes").get();
-        const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        let classOptions = classes.map(c => `<option value="${c.id}" data-curriculum-id="${c.curriculumId}">${c.className}</option>`).join('');
-        
-        mainContent.innerHTML = `<div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg"><div class="space-y-6"><div><h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="md:col-span-1"><label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label><select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"><option value="">-- Chọn một lớp --</option>${classOptions}</select></div><div class="md:col-span-2"><label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label><input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ${new Date().toLocaleDateString('vi-VN')}"></div></div></div><div class="border-t pt-6"><h2 class="text-xl font-semibold text-gray-800 mb-4">2. Chọn Học Phần Để Giao</h2><div id="core-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-72 overflow-y-auto"><p class="text-gray-500">Vui lòng chọn một lớp học để xem các học phần.</p></div></div><button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">Tạo Bài Tập</button></div></div>`;
+            const studentRows = students.map(s => `
+                <tr class="border-b">
+                    <td class="py-3 px-4 font-medium">${s.displayName || '(Chưa có tên)'}</td>
+                    <td class="py-3 px-4">${s.email}</td>
+                </tr>
+            `).join('');
+
+            mainContent.innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg">
+                    <div class="p-6">
+                        <h2 class="text-xl font-bold">Danh sách Học sinh (${students.length})</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="py-3 px-4">Tên hiển thị</th>
+                                    <th scope="col" class="py-3 px-4">Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${studentRows || '<tr><td colspan="2" class="p-4 text-center">Không có học sinh nào.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+        } catch (error) {
+             mainContent.innerHTML = `<p class="text-red-500">Lỗi tải danh sách học sinh: ${error.message}</p>`;
+        }
     }
 
     // ===================================================================================
-    // SECTION VI: EVENT LISTENERS
+    // SECTION IV: EVENT LISTENERS
     // ===================================================================================
     document.addEventListener('DOMContentLoaded', () => {
         // --- Sidebar & Logout ---
         logoutButton.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'index.html'));
+        
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
                 const nav = e.currentTarget;
                 nav.classList.add('active');
+                
                 const navId = nav.id;
-                if (navId === 'nav-classes') renderClassManagement();
+                if (navId === 'nav-assignments') renderAssignmentCreator();
+                else if (navId === 'nav-upload') renderModuleUploader();
                 else if (navId === 'nav-students') renderStudentManagement();
-                else if (navId === 'nav-content') renderContentManagement();
-                else if (navId === 'nav-assignments') renderAssignmentManagement();
             });
-        });
-
-        // --- Main Content Event Delegation ---
-        mainContent.addEventListener('click', async (e) => {
-            // -- For Content Management --
-            const trigger = e.target.closest('.context-menu-trigger');
-            if (e.target.closest('#add-curriculum-btn')) {
-                showInputModal('Tạo Giáo trình mới', 'Tên Giáo trình', '', async (name) => {
-                    if (name.trim()) await db.collection('new_curriculums').add({ name: name.trim(), createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    renderContentManagement();
-                });
-            } else if (trigger) {
-                e.stopPropagation();
-                const parentNode = trigger.closest('.tree-node');
-                const id = parentNode.dataset.id;
-                const type = parentNode.dataset.type;
-                const name = parentNode.querySelector('.node-name').textContent.trim();
-                
-                document.getElementById('tree-context-menu')?.remove();
-                let menuItems = '';
-                if (type === 'curriculum') menuItems = `<li data-action="add-unit">➕ Thêm Unit</li><li data-action="rename">✏️ Đổi tên</li><li data-action="delete" class="text-red-600 hover:bg-red-100">🗑️ Xóa</li>`;
-                else if (type === 'unit') menuItems = `<li data-action="add-module">➕ Thêm Học phần</li><li data-action="rename">✏️ Đổi tên</li><li data-action="delete" class="text-red-600 hover:bg-red-100">🗑️ Xóa</li>`;
-                else if (type === 'module') menuItems = `<li data-action="edit-content">✏️ Sửa nội dung</li><li data-action="rename">✏️ Đổi tên</li><li data-action="delete" class="text-red-600 hover:bg-red-100">🗑️ Xóa</li>`;
-
-                const menu = document.createElement('ul');
-                menu.id = 'tree-context-menu';
-                menu.className = 'absolute bg-white shadow-lg rounded-md p-1 text-sm z-20';
-                menu.style.left = `${e.pageX}px`;
-                menu.style.top = `${e.pageY}px`;
-                menu.innerHTML = menuItems.split('<li').slice(1).map(item => `<li class="cursor-pointer px-3 py-1.5 rounded" ${item}`).join('');
-                document.body.appendChild(menu);
-                menu.querySelectorAll('li').forEach(item => {
-                    item.onclick = () => {
-                        const action = item.dataset.action;
-                        if (action === 'add-unit') handleAddItem('unit', id, name);
-                        else if (action === 'add-module') handleAddItem('module', id, name);
-                        else if (action === 'rename') handleRenameItem(type, id, name);
-                        else if (action === 'delete') handleDeleteItem(type, id, name);
-                        else if (action === 'edit-content' && parentNode.dataset.moduleType === 'vocab') renderVocabEditor(id, parentNode.dataset.contentId);
-                        menu.remove();
-                    };
-                });
-            } else if (e.target.closest('.tree-node')) {
-                const node = e.target.closest('.tree-node');
-                if (e.target.closest('.toggle-icon')) {
-                    const nestedList = node.nextElementSibling;
-                    if (nestedList?.tagName === 'UL') {
-                        nestedList.classList.toggle('hidden');
-                        node.classList.toggle('collapsed');
-                    }
-                } else if (e.target.closest('.tree-node-main')) {
-                    document.querySelectorAll('.tree-node').forEach(n => n.style.backgroundColor = 'transparent');
-                    node.style.backgroundColor = '#eef2ff';
-                    const type = node.dataset.type;
-                    const id = node.dataset.id;
-                    if (type === 'module' && node.dataset.moduleType === 'vocab') renderVocabEditor(id, node.dataset.contentId);
-                    else document.getElementById('content-detail-panel').innerHTML = `<p>Đã chọn <b>${type.toUpperCase()}</b>: ${node.querySelector('.node-name').textContent.trim()}</p><p>ID: ${id}</p>`;
-                }
-            }
-            
-            // -- For Class Management --
-            else if (e.target.closest('.list-item[data-class-id]')) {
-                 document.querySelectorAll('.list-item[data-class-id]').forEach(el => el.classList.remove('active'));
-                 const item = e.target.closest('.list-item[data-class-id]');
-                 item.classList.add('active');
-                 renderClassDetail(item.dataset.classId);
-            } else if (e.target.matches('#add-class-btn')) {
-                const className = document.getElementById('new-class-name').value.trim();
-                const curriculumId = document.getElementById('new-class-curriculum').value;
-                if (!className || !curriculumId) return alert('Vui lòng nhập tên lớp và chọn giáo trình.');
-                await db.collection('classes').add({ className, curriculumId });
-                renderClassManagement();
-            } else if (e.target.matches('#delete-class-btn')) {
-                const classId = e.target.dataset.id;
-                if (confirm('Bạn có chắc muốn xóa lớp học này?')) {
-                    await db.collection('classes').doc(classId).delete();
-                    renderClassManagement();
-                }
-            } else if (e.target.matches('.add-student-btn, .remove-student-btn')) {
-                const studentId = e.target.dataset.studentId;
-                const classId = e.target.dataset.classId;
-                const isAdding = e.target.classList.contains('add-student-btn');
-                const operation = isAdding ? firebase.firestore.FieldValue.arrayUnion : firebase.firestore.FieldValue.arrayRemove;
-                await db.collection('users').doc(studentId).update({ enrolledClasses: operation(classId) });
-                renderClassDetail(classId);
-            }
-
-            // -- For Assignment Management --
-            else if (e.target.matches('#create-assignment-btn')) {
-                const classId = document.getElementById('class-selector').value;
-                const title = document.getElementById('assignment-title').value.trim();
-                if (!classId || !title) return alert('Vui lòng chọn lớp và nhập tiêu đề bài tập.');
-                
-                const selectedModules = [];
-                document.querySelectorAll('#core-modules-container input[type="checkbox"]:checked').forEach(el => {
-                    selectedModules.push({ id: el.value, title: el.dataset.moduleTitle, type: el.dataset.moduleType });
-                });
-                
-                if(selectedModules.length === 0) return alert('Vui lòng chọn ít nhất một học phần để giao.');
-
-                await db.collection('assignments').add({
-                    classId, title, modules: selectedModules, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                alert('Giao bài tập thành công!');
-                document.getElementById('nav-assignments').click();
-            }
-
-            // --- Handlers inside dynamically created content ---
-            else if (e.target.matches('#save-new-vocab-btn, #cancel-creation-btn, #update-vocab-btn, #cancel-edit-btn')) {
-                // These are handled by their own `.onclick` inside their render functions
-            }
-        });
-
-        mainContent.addEventListener('change', async (e) => {
-            // -- For Assignment Management --
-            if (e.target.id === 'class-selector') {
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const curriculumId = selectedOption.dataset.curriculumId;
-                const coreContainer = document.getElementById('core-modules-container');
-                if (!curriculumId) {
-                    coreContainer.innerHTML = '<p class="text-gray-500">Lớp này chưa có giáo trình.</p>';
-                    return;
-                }
-                coreContainer.innerHTML = '<p>Đang tải học phần...</p>';
-                
-                const unitsSnap = await db.collection('new_units').where('curriculumId', '==', curriculumId).orderBy('order').get();
-                const unitIds = unitsSnap.docs.map(doc => doc.id);
-                if (unitIds.length === 0) {
-                     coreContainer.innerHTML = '<p class="text-gray-500">Giáo trình của lớp này chưa có unit nào.</p>';
-                     return;
-                }
-
-                const modulesSnap = await db.collection('new_modules').where('unitId', 'in', unitIds).orderBy('order').get();
-                const units = unitsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                let coreHtml = '';
-                units.forEach(unit => {
-                    coreHtml += `<div class="font-semibold text-gray-700 mt-3 first:mt-0">${unit.name}</div>`;
-                    const unitModules = modules.filter(m => m.unitId === unit.id);
-                    if (unitModules.length > 0) {
-                        coreHtml += unitModules.map(module => `
-                            <label class="flex items-center p-2 rounded hover:bg-gray-100 ml-2">
-                                <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${module.contentId}" data-module-title="${module.title}" data-module-type="${module.type}">
-                                <span class="ml-3 text-sm text-gray-800">${module.title}</span>
-                            </label>
-                        `).join('');
-                    } else {
-                        coreHtml += `<p class="text-xs text-gray-400 ml-4">Chưa có học phần</p>`;
-                    }
-                });
-                coreContainer.innerHTML = coreHtml || '<p class="text-gray-500">Giáo trình này chưa có học phần nào.</p>';
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.context-menu-trigger') && !e.target.closest('#tree-context-menu')) {
-                document.getElementById('tree-context-menu')?.remove();
-            }
         });
     });
 </script>
