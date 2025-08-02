@@ -327,7 +327,6 @@
                 const themeToggleIcon = document.getElementById('theme-toggle-icon');
                 const themeToggleText = document.getElementById('theme-toggle-text');
                 const body = document.body;
-
                 const applyTheme = (theme) => {
                     if (theme === 'dark') {
                         body.classList.add('dark');
@@ -339,12 +338,10 @@
                         themeToggleText.textContent = 'Dark Mode';
                     }
                 };
-
                 const savedTheme = localStorage.getItem('theme');
                 const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                 const currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
                 applyTheme(currentTheme);
-
                 themeToggleBtn.addEventListener('click', () => {
                     const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
                     localStorage.setItem('theme', newTheme);
@@ -379,7 +376,7 @@
                 document.getElementById('nav-practice').addEventListener('click', () => this.renderPracticeModeSelection());
                 document.getElementById('nav-test').addEventListener('click', () => this.openModal('test-setup-modal'));
                 document.getElementById('nav-reset').addEventListener('click', () => {
-                    this.showCustomConfirm("Bạn có chắc muốn reset tiến độ học phần này không? Hành động này không thể hoàn tác.", async () => {
+                    this.showCustomConfirm("Bạn có chắc muốn reset tiến độ học phần này? Hành động này không thể hoàn tác.", async () => {
                         this.data.words.forEach(w => w.isLearned = false);
                         this.data.structures.forEach(s => s.isLearned = false);
                         this.data.skippedItems = [];
@@ -420,23 +417,9 @@
                 document.getElementById('app-title').textContent = title;
                 document.getElementById('app-subtitle').textContent = subtitle;
             },
-  analyzeAndTagWords() {
-                const tagMap = {
-                    'ghen': ['emotion_negative'], 'tị': ['emotion_negative'], 'đối lập': ['concept'],
-                    'hòa đồng': ['personality_positive'], 'thẳng thắn': ['personality_positive'], 'bộc trực': ['personality_positive'],
-                    'bướng bỉnh': ['personality_negative'], 'cứng đầu': ['personality_negative'], 'thù địch': ['personality_negative'],
-                    'dũng cảm': ['personality_positive'], 'táo bạo': ['personality_positive'], 'tự tin': ['personality_positive'],
-                    'rụt rè': ['personality_negative'], 'nhút nhát': ['personality_negative'],
-                    'chân thành': ['personality_positive'], 'thành thật': ['personality_positive'],
-                    'giả dối': ['personality_negative'], 'hung hăng': ['personality_negative'],
-                    'phục tùng': ['personality_negative'], 'dễ bảo': ['personality_negative'],
-                    'lo lắng': ['emotion_negative'], 'hồi hộp': ['emotion_negative'],
-                    'chu đáo': ['personality_positive'], 'ân cần': ['personality_positive'],
-                    'vô ý': ['personality_negative'], 'thiếu chu đáo': ['personality_negative'],
-                    'khiêu khích': ['action_negative'], 'bắt nạt': ['action_negative'],
-                    'chịu đựng': ['action_neutral'], 'tha thứ': ['action_positive']
-                };
-
+            
+            analyzeAndTagWords() {
+                const tagMap = { 'ghen': ['emotion_negative'], 'tị': ['emotion_negative'], 'đối lập': ['concept'], 'hòa đồng': ['personality_positive'], 'thẳng thắn': ['personality_positive'], 'bộc trực': ['personality_positive'], 'bướng bỉnh': ['personality_negative'], 'cứng đầu': ['personality_negative'], 'thù địch': ['personality_negative'], 'dũng cảm': ['personality_positive'], 'táo bạo': ['personality_positive'], 'tự tin': ['personality_positive'], 'rụt rè': ['personality_negative'], 'nhút nhát': ['personality_negative'], 'chân thành': ['personality_positive'], 'thành thật': ['personality_positive'], 'giả dối': ['personality_negative'], 'hung hăng': ['personality_negative'], 'phục tùng': ['personality_negative'], 'dễ bảo': ['personality_negative'], 'lo lắng': ['emotion_negative'], 'hồi hộp': ['emotion_negative'], 'chu đáo': ['personality_positive'], 'ân cần': ['personality_positive'], 'vô ý': ['personality_negative'], 'thiếu chu đáo': ['personality_negative'], 'khiêu khích': ['action_negative'], 'bắt nạt': ['action_negative'], 'chịu đựng': ['action_neutral'], 'tha thứ': ['action_positive'] };
                 this.data.words.forEach(word => {
                     word.tags = [];
                     for (const keyword in tagMap) {
@@ -456,9 +439,7 @@
                 this.data.words.forEach(word => {
                     const root = familyRoots[word.word];
                     if (root) {
-                        if (!families[root]) {
-                            families[root] = [];
-                        }
+                        if (!families[root]) families[root] = [];
                         families[root].push(word.id);
                     }
                     word.familyRoot = root || null;
@@ -475,7 +456,6 @@
                             const [phrase, translation] = struct.includes(':') ? struct.split(':') : [struct, ''];
                             const cleanPhrase = phrase.replace(/\s*\((v|n|adj|adv|be)\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
                             const wordsInStruct = cleanPhrase.split(' ');
-                            
                             let prepositionsInStruct = [];
                             wordsInStruct.forEach((word, idx) => {
                                 const cleanWord = word.replace(/,$/, '');
@@ -483,25 +463,14 @@
                                     prepositionsInStruct.push({ word: cleanWord, index: idx });
                                 }
                             });
-
                             if (prepositionsInStruct.length > 0) {
                                 prepositionsInStruct.forEach((prep, prepIndex) => {
                                     let questionParts = [...wordsInStruct];
                                     questionParts[prep.index] = '____';
-                                    this.data.structures.push({
-                                        id: `s_${word.id}_${index}_p${prepIndex}`,
-                                        rootWordId: word.id,
-                                        question: questionParts.join(' '),
-                                        answer: prep.word,
-                                        fullStructure: phrase.trim(),
-                                        translation: translation.trim(),
-                                        isLearned: false,
-                                        type: 'preposition'
-                                    });
+                                    this.data.structures.push({ id: `s_${word.id}_${index}_p${prepIndex}`, rootWordId: word.id, question: questionParts.join(' '), answer: prep.word, fullStructure: phrase.trim(), translation: translation.trim(), isLearned: false, type: 'preposition' });
                                 });
                             } else {
-                                let keyword = null;
-                                let keywordIndex = -1;
+                                let keyword = null, keywordIndex = -1;
                                 for(let i = 0; i < wordsInStruct.length; i++){
                                     const currentWord = wordsInStruct[i].replace(/,$/, '');
                                     if(!this.data.stopWords.includes(currentWord) && this.data.words.some(w => w.word === currentWord)){
@@ -514,20 +483,10 @@
                                     keywordIndex = 0;
                                     keyword = wordsInStruct[0];
                                 }
-
                                 if (keyword) {
                                     let questionParts = [...wordsInStruct];
                                     questionParts[keywordIndex] = '____';
-                                    this.data.structures.push({
-                                        id: `s_${word.id}_${index}`,
-                                        rootWordId: word.id,
-                                        question: questionParts.join(' '),
-                                        answer: keyword,
-                                        fullStructure: phrase.trim(),
-                                        translation: translation.trim(),
-                                        isLearned: false,
-                                        type: 'collocation'
-                                    });
+                                    this.data.structures.push({ id: `s_${word.id}_${index}`, rootWordId: word.id, question: questionParts.join(' '), answer: keyword, fullStructure: phrase.trim(), translation: translation.trim(), isLearned: false, type: 'collocation' });
                                 }
                             }
                         });
