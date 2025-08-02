@@ -4,205 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi tiết Bài tập - English with Thành Nam</title>
+    
+    <!-- Các thư viện bên ngoài -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Be Vietnam Pro', sans-serif; }
-    </style>
+    
+    <!-- Liên kết tới tệp CSS thống nhất của hệ thống -->
+    <link rel="stylesheet" href="styles/main.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
+    <!-- Hiệu ứng nền động -->
+    <div class="background-shapes">
+        <div class="shape shape1"></div>
+        <div class="shape shape2"></div>
+        <div class="shape shape3"></div>
+        <div class="shape shape4"></div>
+    </div>
 
-    <header class="bg-white shadow-md">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600">
-                <i class="fas fa-arrow-left mr-2"></i> Quay lại Dashboard
-            </a>
+    <!-- Bố cục ứng dụng chung -->
+    <div class="app-layout">
+        
+        <!-- Sidebar (thanh điều hướng bên trái) -->
+        <nav id="sidebar" class="glass-panel">
             <div>
-                <span id="user-display-name" class="text-gray-700 mr-4"></span>
-                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Đăng xuất</button>
+                <div class="text-center mb-10">
+                    <h1 class="text-2xl font-bold text-slate-800">Bài Tập</h1>
+                    <p class="text-sm text-slate-600" id="user-display-name">Đang tải...</p>
+                </div>
+                <div id="sidebar-nav" class="flex-grow">
+                     <a href="dashboard.html" class="sidebar-nav-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Quay lại Dashboard</span>
+                    </a>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <button id="logout-button" class="sidebar-nav-btn w-full justify-center text-red-500 hover:bg-red-100 hover:text-red-700">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>Đăng xuất</span>
+                </button>
             </div>
         </nav>
-    </header>
+        
+        <!-- Lớp phủ cho sidebar trên di động -->
+        <div id="sidebar-overlay"></div>
 
-    <main class="container mx-auto px-6 py-8">
-        <div id="loading-state" class="text-center">
-            <p class="text-lg text-gray-600">Đang tải chi tiết bài tập...</p>
-        </div>
+        <!-- Nội dung chính của trang -->
+        <main id="app">
+             <header class="main-header">
+                <button id="menu-toggle-btn" class="lg:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="text-left">
+                    <h1 id="assignment-title" class="text-3xl lg:text-4xl font-bold text-slate-800">Đang tải bài tập...</h1>
+                    <p id="assignment-deadline" class="text-red-500 font-semibold mt-1 lg:mt-2"></p>
+                </div>
+            </header>
 
-        <div id="main-content" class="hidden">
-            <h1 id="assignment-title" class="text-3xl font-bold text-gray-800"></h1>
-            <p id="assignment-deadline" class="text-md text-red-600 font-semibold mt-2 mb-8"></p>
-
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Các học phần cần hoàn thành:</h2>
-                <div id="modules-list" class="space-y-4">
-                    <!-- Danh sách học phần sẽ được chèn vào đây -->
+            <div id="main-content">
+                <div id="loading-state" class="text-center text-lg text-slate-600">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Đang tải chi tiết các học phần...
+                </div>
+                <div id="modules-list" class="space-y-6">
+                    <!-- Danh sách học phần sẽ được chèn vào đây bằng JavaScript -->
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-            authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-            projectId: "ielts-foundation-6ea9d",
-            storageBucket: "ielts-foundation-6ea9d.appspot.com",
-            messagingSenderId: "296690693780",
-            appId: "1:296690693780:web:f9a54a9ded68a73dcd2681"
-        };
-        
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        const loadingState = document.getElementById('loading-state');
-        const mainContent = document.getElementById('main-content');
-        const userDisplayName = document.getElementById('user-display-name');
-        const assignmentTitle = document.getElementById('assignment-title');
-        const assignmentDeadline = document.getElementById('assignment-deadline');
-        const modulesList = document.getElementById('modules-list');
-        const logoutButton = document.getElementById('logout-button');
-
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                userDisplayName.textContent = user.displayName || user.email;
-                await loadAssignmentDetails(user.uid);
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
-
-        function parseStructuresForProgress(words) {
-            const structures = [];
-            words.forEach(word => {
-                if (word.structure) {
-                    const structureParts = word.structure.split(';').map(s => s.trim()).filter(Boolean);
-                    structureParts.forEach((part, index) => {
-                        structures.push({ id: `s_${word.id}_${index}` });
-                    });
-                }
-            });
-            return structures;
-        }
-
-        async function loadAssignmentDetails(userId) {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const assignmentId = urlParams.get('id');
-                if (!assignmentId) throw new Error("Không tìm thấy ID bài tập trong URL.");
-
-                const [assignmentDoc, progressDoc] = await Promise.all([
-                    db.collection('assignments').doc(assignmentId).get(),
-                    db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get()
-                ]);
-
-                if (!assignmentDoc.exists) throw new Error("Bài tập không tồn tại.");
-                const assignmentData = assignmentDoc.data();
-                const studentProgress = progressDoc.exists ? progressDoc.data() : {};
-
-                const moduleIds = assignmentData.moduleIds;
-                if (!moduleIds || moduleIds.length === 0) {
-                    modulesList.innerHTML = '<p>Bài tập này không có học phần nào.</p>';
-                    return;
-                }
-                
-                const modulesSnap = await db.collection('modules').where(firebase.firestore.FieldPath.documentId(), 'in', moduleIds).get();
-                const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                assignmentTitle.textContent = assignmentData.title;
-                const deadline = assignmentData.deadline.toDate();
-                assignmentDeadline.textContent = `Hạn chót: ${deadline.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
-
-                modulesList.innerHTML = '';
-                modules.forEach(module => {
-                    const moduleProgress = studentProgress.moduleProgress?.[module.id] || {};
-                    modulesList.appendChild(createModuleElement(assignmentId, module, moduleProgress));
-                });
-
-            } catch (error) {
-                console.error("Lỗi khi tải chi tiết bài tập:", error);
-                mainContent.innerHTML = `<p class="text-red-500 text-center">${error.message}</p>`;
-            } finally {
-                loadingState.classList.add('hidden');
-                mainContent.classList.remove('hidden');
-            }
-        }
-        
-        function createModuleElement(assignmentId, module, progress) {
-            const totalWords = module.words?.length || 0;
-            const learnedWords = progress.words?.filter(w => w.isLearned).length || 0;
-            const vocabProgressPercent = totalWords > 0 ? Math.round((learnedWords / totalWords) * 100) : 0;
-
-            const allStructures = parseStructuresForProgress(module.words || []);
-            const totalStructures = allStructures.length;
-            const learnedStructures = progress.structures?.filter(s => s.isLearned).length || 0;
-            const structureProgressPercent = totalStructures > 0 ? Math.round((learnedStructures / totalStructures) * 100) : 0;
-
-            const testHistory = progress.testHistory || [];
-            const lastTest = testHistory.length > 0 ? testHistory[testHistory.length - 1] : null;
-            
-            const isCompleted = vocabProgressPercent === 100 && structureProgressPercent === 100 && lastTest && lastTest.score >= 75;
-
-            const element = document.createElement('div');
-            element.className = `bg-gray-50 p-4 rounded-lg border-l-4 ${isCompleted ? 'border-green-500' : 'border-indigo-500'}`;
-            
-            let testHistoryHtml = '<p class="text-xs text-gray-500 mt-2">Chưa có lần test nào.</p>';
-            if (testHistory.length > 0) {
-                testHistoryHtml = '<ul class="text-xs text-gray-600 mt-2 space-y-1 list-disc list-inside">';
-                testHistory.slice(-3).reverse().forEach(test => {
-                    const testDate = test.timestamp.toDate().toLocaleDateString('vi-VN');
-                    testHistoryHtml += `<li>Ngày ${testDate}: <span class="font-semibold ${test.score >= 75 ? 'text-green-600' : 'text-red-600'}">${test.score}%</span> (${test.correct}/${test.total} câu)</li>`;
-                });
-                testHistoryHtml += '</ul>';
-            }
-
-            element.innerHTML = `
-                <a href="vocab_app.html?assignmentId=${assignmentId}&vocabId=${module.id}" class="flex justify-between items-center hover:opacity-80 transition-opacity">
-                    <div class="flex items-center">
-                        <i class="fas ${isCompleted ? 'fa-check-circle text-green-500' : 'fa-book-open text-indigo-500'} mr-4 text-xl"></i>
-                        <span class="font-semibold text-gray-700">${module.title}</span>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-indigo-600 font-semibold mr-2">${isCompleted ? 'Đã xong' : 'Bắt đầu'}</span>
-                        <i class="fas fa-arrow-right text-indigo-600"></i>
-                    </div>
-                </a>
-                <div class="mt-3 pt-3 border-t border-gray-200 space-y-3">
-                    <div>
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="font-medium text-gray-600">Tiến độ Từ vựng:</span>
-                            <span class="font-bold text-indigo-600">${learnedWords} / ${totalWords} (${vocabProgressPercent}%)</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                            <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${vocabProgressPercent}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="font-medium text-gray-600">Tiến độ Cấu trúc:</span>
-                            <span class="font-bold text-blue-600">${learnedStructures} / ${totalStructures} (${structureProgressPercent}%)</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${structureProgressPercent}%"></div>
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        <h4 class="text-sm font-medium text-gray-600">Kết quả Test gần nhất:</h4>
-                        ${testHistoryHtml}
-                    </div>
-                </div>
-            `;
-            return element;
-        }
-
-        logoutButton.addEventListener('click', () => {
-            auth.signOut().then(() => { window.location.href = 'index.html'; });
-        });
-    </script>
+    <!-- 
+        Script sẽ được thêm vào đây ở bước sau.
+        Chúng ta sử dụng type="module" để có thể dùng import/export.
+    -->
+    <!-- <script type="module" src="js/app/assignment.js"></script> -->
 </body>
 </html>
