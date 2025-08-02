@@ -253,24 +253,47 @@ export const VocabEngine = {
         }
     },
 
-    async saveData() {
+   async saveData() {
         if (!this.data.userId || !this.data.assignmentId || !this.data.moduleId) return;
         
         const progressRef = db.collection('student_progress').doc(this.data.userId).collection('assignments').doc(this.data.assignmentId);
+        
+        // SỬA LỖI 1: Dùng cú pháp dot notation để chỉ định chính xác trường cần cập nhật.
         const progressPayload = {
-            [`moduleProgress.${this.data.moduleId}`]: {
-                words: this.data.words.map(w => ({ id: w.id, isLearned: w.isLearned })),
-                structures: this.data.structures.map(s => ({ id: s.id, isLearned: s.isLearned })),
-                skippedItems: this.data.skippedItems,
-                testHistory: this.data.testHistory,
-                lastUpdated: firestore.FieldValue.serverTimestamp()
-            }
+            [`moduleProgress.${this.data.moduleId}.words`]: this.data.words.map(w => ({ id: w.id, isLearned: w.isLearned })),
+            [`moduleProgress.${this.data.moduleId}.structures`]: this.data.structures.map(s => ({ id: s.id, isLearned: s.isLearned })),
+            [`moduleProgress.${this.data.moduleId}.skippedItems`]: this.data.skippedItems,
+            [`moduleProgress.${this.data.moduleId}.testHistory`]: this.data.testHistory,
+            [`moduleProgress.${this.data.moduleId}.lastUpdated`]: firestore.FieldValue.serverTimestamp()
         };
+
         try {
-            await progressRef.set(progressPayload, { merge: true });
+            // SỬA LỖI 1: Thay thế 'set' bằng 'update' để không ghi đè tiến độ của các học phần khác.
+            await progressRef.update(progressPayload);
+            // KẾT THÚC SỬA LỖI 1
             console.log("Progress saved at:", new Date().toLocaleTimeString());
         } catch (error) {
-            console.error("Error saving progress:", error);
+            // Nếu document chưa tồn tại, 'update' sẽ lỗi. Khi đó ta dùng 'set' để tạo mới.
+            if (error.code === 'not-found') {
+                try {
+                    const initialPayload = {
+                        moduleProgress: {
+                           [this.data.moduleId]: {
+                                words: this.data.words.map(w => ({ id: w.id, isLearned: w.isLearned })),
+                                structures: this.data.structures.map(s => ({ id: s.id, isLearned: s.isLearned })),
+                                skippedItems: this.data.skippedItems,
+                                testHistory: this.data.testHistory,
+                                lastUpdated: firestore.FieldValue.serverTimestamp()
+                           }
+                        }
+                    };
+                    await progressRef.set(initialPayload);
+                } catch (e) {
+                     console.error("Error creating progress document:", e);
+                }
+            } else {
+                console.error("Error saving progress:", error);
+            }
         }
     },
     
@@ -850,7 +873,7 @@ export const VocabEngine = {
         }, 1000);
     },
 
-    submitTest() {
+   submitTest() {
         clearInterval(this.testTimer);
         this.testTimer = null;
         let correctCount = 0;
@@ -906,12 +929,22 @@ export const VocabEngine = {
         });
 
         const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
-        this.data.testHistory.push({
+        
+        // SỬA LỖI 2: Dùng serverTimestamp thay vì Timestamp.now()
+        const newTestRecord = {
             correct: correctCount,
             total: questions.length,
             score: score,
-            timestamp: firestore.Timestamp.now()
-        });
+            timestamp: firestore.FieldValue.serverTimestamp()
+        };
+        // KẾT THÚC SỬA LỖI 2
+
+        // Đảm bảo testHistory là một mảng trước khi push
+        if (!Array.isArray(this.data.testHistory)) {
+            this.data.testHistory = [];
+        }
+        this.data.testHistory.push(newTestRecord);
+        
         this.saveData();
         this.renderTestEnd(correctCount, questions.length);
     },
