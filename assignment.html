@@ -36,7 +36,7 @@
 
             <div class="bg-white p-6 rounded-lg shadow">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Các học phần cần hoàn thành:</h2>
-                <div id="modules-list" class="space-y-3">
+                <div id="modules-list" class="space-y-4">
                     </div>
             </div>
         </div>
@@ -59,7 +59,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // DOM Elements
         const loadingState = document.getElementById('loading-state');
         const mainContent = document.getElementById('main-content');
         const userDisplayName = document.getElementById('user-display-name');
@@ -79,58 +78,36 @@
 
         async function loadAssignmentDetails(userId) {
             try {
-                // 1. Lấy ID bài tập từ URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const assignmentId = urlParams.get('id');
+                if (!assignmentId) throw new Error("Không tìm thấy ID bài tập trong URL.");
 
-                if (!assignmentId) {
-                    throw new Error("Không tìm thấy ID bài tập trong URL.");
-                }
+                const [assignmentDoc, progressDoc] = await Promise.all([
+                    db.collection('assignments').doc(assignmentId).get(),
+                    db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get()
+                ]);
 
-                // 2. Tải thông tin chi tiết của bài tập
-                const assignmentDoc = await db.collection('assignments').doc(assignmentId).get();
-                if (!assignmentDoc.exists) {
-                    throw new Error("Bài tập không tồn tại.");
-                }
+                if (!assignmentDoc.exists) throw new Error("Bài tập không tồn tại.");
                 const assignmentData = assignmentDoc.data();
+                const studentProgress = progressDoc.exists ? progressDoc.data() : {};
 
-                // 3. Tải thông tin các học phần thuộc bài tập này
                 const moduleIds = assignmentData.moduleIds;
                 if (!moduleIds || moduleIds.length === 0) {
                     modulesList.innerHTML = '<p>Bài tập này không có học phần nào.</p>';
                     return;
                 }
                 
-                // Dùng query 'in' để lấy tất cả các module cần thiết trong 1 lần gọi
                 const modulesSnap = await db.collection('modules').where(firebase.firestore.FieldPath.documentId(), 'in', moduleIds).get();
                 const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // 4. (Tùy chọn) Tải tiến độ của học sinh với bài tập này để biết học phần nào đã hoàn thành
-                // Hiện tại, chúng ta sẽ để mặc định là "Bắt đầu"
-                
-                // 5. Hiển thị mọi thứ ra giao diện
                 assignmentTitle.textContent = assignmentData.title;
-                const deadline = assignmentData.deadline.toDate(); // Dùng đúng trường 'deadline'
+                const deadline = assignmentData.deadline.toDate();
                 assignmentDeadline.textContent = `Hạn chót: ${deadline.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
 
-                modulesList.innerHTML = ''; // Xóa placeholder
+                modulesList.innerHTML = '';
                 modules.forEach(module => {
-                    const moduleEl = document.createElement('a');
-                    // Tạo link đến trang học bài, truyền cả assignmentId và moduleId (trước đây là vocabId)
-                    moduleEl.href = `vocab_app.html?assignmentId=${assignmentId}&vocabId=${module.id}`;
-                    moduleEl.className = 'flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors';
-                    
-                    moduleEl.innerHTML = `
-                        <div class="flex items-center">
-                            <i class="fas fa-book-open text-indigo-500 mr-4"></i>
-                            <span class="font-semibold text-gray-700">${module.title}</span>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="text-indigo-600 font-semibold mr-2">Bắt đầu</span>
-                            <i class="fas fa-arrow-right text-indigo-600"></i>
-                        </div>
-                    `;
-                    modulesList.appendChild(moduleEl);
+                    const moduleProgress = studentProgress.moduleProgress?.[module.id] || {};
+                    modulesList.appendChild(createModuleElement(assignmentId, module, moduleProgress));
                 });
 
             } catch (error) {
@@ -141,11 +118,60 @@
                 mainContent.classList.remove('hidden');
             }
         }
+        
+        function createModuleElement(assignmentId, module, progress) {
+            const totalWords = module.words?.length || 0;
+            const learnedWords = progress.words?.filter(w => w.isLearned).length || 0;
+            const progressPercent = totalWords > 0 ? Math.round((learnedWords / totalWords) * 100) : 0;
+            const testHistory = progress.testHistory || [];
+            const lastTest = testHistory.length > 0 ? testHistory[testHistory.length - 1] : null;
+            
+            // Điều kiện hoàn thành: học 100% VÀ bài test gần nhất > 75%
+            const isCompleted = progressPercent === 100 && lastTest && lastTest.score >= 75;
+
+            const element = document.createElement('div');
+            element.className = `bg-gray-50 p-4 rounded-lg border-l-4 ${isCompleted ? 'border-green-500' : 'border-indigo-500'}`;
+            
+            let testHistoryHtml = '<p class="text-xs text-gray-500 mt-2">Chưa có lần test nào.</p>';
+            if (testHistory.length > 0) {
+                testHistoryHtml = '<ul class="text-xs text-gray-600 mt-2 space-y-1 list-disc list-inside">';
+                testHistory.slice(-3).reverse().forEach(test => { // Hiển thị 3 lần gần nhất
+                    const testDate = test.timestamp.toDate().toLocaleDateString('vi-VN');
+                    testHistoryHtml += `<li>Ngày ${testDate}: <span class="font-semibold ${test.score >= 75 ? 'text-green-600' : 'text-red-600'}">${test.score}%</span> (${test.correct}/${test.total} câu)</li>`;
+                });
+                testHistoryHtml += '</ul>';
+            }
+
+            element.innerHTML = `
+                <a href="vocab_app.html?assignmentId=${assignmentId}&vocabId=${module.id}" class="flex justify-between items-center hover:opacity-80 transition-opacity">
+                    <div class="flex items-center">
+                        <i class="fas ${isCompleted ? 'fa-check-circle text-green-500' : 'fa-book-open text-indigo-500'} mr-4 text-xl"></i>
+                        <span class="font-semibold text-gray-700">${module.title}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-indigo-600 font-semibold mr-2">${isCompleted ? 'Đã xong' : 'Bắt đầu'}</span>
+                        <i class="fas fa-arrow-right text-indigo-600"></i>
+                    </div>
+                </a>
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-gray-600">Tiến độ học:</span>
+                        <span class="font-bold text-indigo-600">${learnedWords} / ${totalWords} (${progressPercent}%)</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                        <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="mt-2">
+                        <h4 class="text-sm font-medium text-gray-600">Kết quả Test gần nhất:</h4>
+                        ${testHistoryHtml}
+                    </div>
+                </div>
+            `;
+            return element;
+        }
 
         logoutButton.addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
+            auth.signOut().then(() => { window.location.href = 'index.html'; });
         });
     </script>
 </body>
