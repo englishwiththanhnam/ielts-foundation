@@ -64,422 +64,533 @@
         <!-- Menu items will be inserted here -->
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-  authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-  projectId: "ielts-foundation-6ea9d",
-  storageBucket: "ielts-foundation-6ea9d.appspot.com",
-  messagingSenderId: "296690693780",
-  appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
-  measurementId: "G-CZD89F0FC3"
-};
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
+        authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
+        projectId: "ielts-foundation-6ea9d",
+        storageBucket: "ielts-foundation-6ea9d.appspot.com",
+        messagingSenderId: "296690693780",
+        appId: "1:296690693780:web:f9a54a9ded68a73dcd2681",
+        measurementId: "G-CZD89F0FC3"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const pageTitle = document.getElementById('page-title');
+    const mainContent = document.getElementById('main-content');
+    const adminName = document.getElementById('admin-name');
+    const logoutButton = document.getElementById('logout-button');
+    const contextMenu = document.getElementById('context-menu');
+
+    // --- AUTH & NAVIGATION ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists && doc.data().role === 'admin') {
+                    adminName.textContent = user.displayName || user.email;
+                    renderClassManagement(); // Mặc định
+                } else {
+                    alert('Tài khoản không có quyền Admin.');
+                    auth.signOut();
+                    window.location.href = 'login.html';
+                }
+            });
+        } else {
+            window.location.href = 'login.html';
         }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+    });
 
-        const pageTitle = document.getElementById('page-title');
-        const mainContent = document.getElementById('main-content');
-        const adminName = document.getElementById('admin-name');
-        const logoutButton = document.getElementById('logout-button');
-        const contextMenu = document.getElementById('context-menu');
-        
-        // --- AUTH & NAVIGATION ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                db.collection('users').doc(user.uid).get().then(doc => {
-                    if (doc.exists && doc.data().role === 'admin') {
-                        adminName.textContent = user.displayName || user.email;
-                        renderClassManagement(); // Mặc định
-                    } else {
-                        alert('Tài khoản không có quyền Admin.');
-                        auth.signOut();
-                        window.location.href = 'login.html';
-                    }
-                });
-            } else {
-                window.location.href = 'login.html';
-            }
+    logoutButton.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'index.html';
         });
-        
-        logoutButton.addEventListener('click', () => {
-            auth.signOut().then(() => { window.location.href = 'index.html'; });
-        });
+    });
 
-        document.querySelectorAll('.sidebar-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-                
-                const navId = e.currentTarget.id;
-                if (navId === 'nav-classes') renderClassManagement();
-                if (navId === 'nav-students') renderStudentManagement();
-                if (navId === 'nav-content') renderContentManagement();
-                if (navId === 'nav-assignments') renderAssignmentManagement();
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            const navId = e.currentTarget.id;
+            if (navId === 'nav-classes') renderClassManagement();
+            if (navId === 'nav-students') renderStudentManagement();
+            if (navId === 'nav-content') renderContentManagement();
+            if (navId === 'nav-assignments') renderAssignmentManagement();
+        });
+    });
+
+    // --- RENDER FUNCTIONS ---
+
+    // 1. CLASS MANAGEMENT
+    async function renderClassManagement() {
+        pageTitle.textContent = 'Quản Lý Lớp Học';
+        mainContent.innerHTML = `<p>Đang tải...</p>`;
+
+        const [classesSnap, studentsSnap, curriculumsSnap] = await Promise.all([
+            db.collection('classes').get(),
+            db.collection('users').where('role', '==', 'student').get(),
+            db.collection('curriculums').get()
+        ]);
+        const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        let classListHtml = classes.map(c => `
+            <div class="list-item border-l-4 border-transparent p-3 cursor-pointer" data-class-id="${c.id}">
+                <p class="font-bold text-gray-800">${c.className}</p>
+            </div>
+        `).join('');
+
+        let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+        mainContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+                <div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                    <h2 class="text-xl font-bold mb-4">Danh sách Lớp học</h2>
+                    <div class="mb-4">
+                        <input id="new-class-name" class="w-full p-2 border rounded mb-2" placeholder="Tên lớp mới...">
+                        <select id="new-class-curriculum" class="w-full p-2 border rounded mb-2">
+                            <option value="">-- Chọn giáo trình --</option>
+                            ${curriculumOptions}
+                        </select>
+                        <button id="add-class-btn" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Thêm Lớp Mới</button>
+                    </div>
+                    <div id="class-list" class="overflow-y-auto flex-grow">${classListHtml}</div>
+                </div>
+                <div id="class-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6">
+                    <p class="text-gray-500">Chọn một lớp học để xem chi tiết và quản lý học sinh.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function renderClassDetail(classId) {
+        const detailView = document.getElementById('class-detail');
+        detailView.innerHTML = `<p>Đang tải chi tiết lớp học...</p>`;
+
+        const [classDoc, studentsSnap] = await Promise.all([
+            db.collection('classes').doc(classId).get(),
+            db.collection('users').where('role', '==', 'student').get()
+        ]);
+        const classData = { id: classDoc.id, ...classDoc.data() };
+        const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const studentsInClass = allStudents.filter(s => s.enrolledClasses && s.enrolledClasses.includes(classId));
+        const studentsNotInClass = allStudents.filter(s => !s.enrolledClasses || !s.enrolledClasses.includes(classId));
+
+        let studentsInClassHtml = studentsInClass.map(s => `
+            <tr class="border-b">
+                <td class="py-2">${s.displayName}</td>
+                <td>${s.email}</td>
+                <td class="text-right"><button class="remove-student-btn text-red-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Xóa</button></td>
+            </tr>
+        `).join('');
+
+        let studentsNotInClassHtml = studentsNotInClass.map(s => `
+            <tr class="border-b">
+                <td class="py-2">${s.displayName}</td>
+                <td>${s.email}</td>
+                <td class="text-right"><button class="add-student-btn text-green-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Thêm</button></td>
+            </tr>
+        `).join('');
+
+        detailView.innerHTML = `
+            <div class="flex justify-between items-start">
+                <h2 class="text-2xl font-bold mb-6">${classData.className}</h2>
+                <button class="delete-class-btn text-red-500 hover:text-red-700" data-id="${classId}"><i class="fas fa-trash-alt"></i> Xóa Lớp</button>
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold mb-2">Học sinh trong lớp (${studentsInClass.length})</h3>
+                    <table class="w-full text-sm">${studentsInClassHtml}</table>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-2">Học sinh chưa có trong lớp</h3>
+                    <table class="w-full text-sm">${studentsNotInClassHtml}</table>
+                </div>
+            </div>
+        `;
+    }
+
+    // 2. STUDENT MANAGEMENT
+    async function renderStudentManagement() {
+        // ... (Không thay đổi)
+        pageTitle.textContent = 'Quản Lý Học Sinh';
+        mainContent.innerHTML = `<p>Đang tải...</p>`;
+
+        const [studentsSnap, classesSnap] = await Promise.all([
+            db.collection('users').where('role', '==', 'student').get(),
+            db.collection('classes').get()
+        ]);
+        const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allClasses = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const studentsWithClass = allStudents.filter(s => s.enrolledClasses && s.enrolledClasses.length > 0);
+        const studentsWithoutClass = allStudents.filter(s => !s.enrolledClasses || s.enrolledClasses.length === 0);
+
+        let classOptions = allClasses.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+
+        let withoutClassHtml = studentsWithoutClass.map(s => `
+            <tr class="border-b">
+                <td class="py-2">${s.displayName}</td>
+                <td class="flex items-center gap-2">
+                    <select class="add-student-to-class-select text-xs p-1 border rounded">
+                        <option value="">Chọn lớp</option>${classOptions}
+                    </select>
+                    <button class="add-student-to-class-btn text-green-500 text-sm" data-student-id="${s.id}">Thêm</button>
+                </td>
+            </tr>
+        `).join('');
+
+        let withClassHtml = studentsWithClass.map(s => {
+            const classNames = (s.enrolledClasses || []).map(classId => {
+                const foundClass = allClasses.find(c => c.id === classId);
+                return foundClass ? foundClass.className : 'Lớp không xác định';
+            }).join(', ');
+            return `<tr class="border-b"><td class="py-2">${s.displayName}</td><td>${classNames}</td></tr>`;
+        }).join('');
+
+        mainContent.innerHTML = `
+            <div class="grid grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold mb-4">Học sinh chưa có lớp</h2>
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b"><th class="text-left pb-2">Tên</th><th class="text-left pb-2">Thêm vào lớp</th></tr></thead>
+                        <tbody>${withoutClassHtml}</tbody>
+                    </table>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold mb-4">Học sinh đã có lớp</h2>
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b"><th class="text-left pb-2">Tên</th><th class="text-left pb-2">Các lớp tham gia</th></tr></thead>
+                        <tbody>${withClassHtml}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // 3. CONTENT MANAGEMENT (MODIFIED)
+    async function renderContentManagement() {
+        pageTitle.textContent = 'Quản Lý Giáo Trình';
+        mainContent.innerHTML = `<p>Đang tải...</p>`;
+
+        const curriculumsSnap = await db.collection('curriculums').get();
+        let curriculumListHtml = curriculumsSnap.docs.map(doc => {
+            const data = doc.data();
+            return `
+                <div class="list-item flex justify-between items-center border-l-4 border-transparent p-3" data-curriculum-id="${doc.id}" data-curriculum-name="${data.name}">
+                    <span class="font-bold text-gray-800 cursor-pointer flex-grow">${data.name}</span>
+                    <button class="context-menu-trigger text-gray-500 hover:text-gray-800 px-2" data-context-type="curriculum" data-id="${doc.id}" data-name="${data.name}">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            `
+        }).join('');
+
+        mainContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+                <div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                    <h2 class="text-xl font-bold mb-4">Danh sách Giáo trình</h2>
+                     <div class="mb-4">
+                        <input id="curriculum-search" class="w-full p-2 border rounded" placeholder="🔎 Tìm kiếm giáo trình...">
+                    </div>
+                    <div id="curriculum-list" class="overflow-y-auto flex-grow">${curriculumListHtml}</div>
+                </div>
+                <div id="curriculum-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6">
+                    <p class="text-gray-500">Chọn một giáo trình để xem các unit và học phần.</p>
+                </div>
+            </div>
+        `;
+        // NEW: Add event listener for the search bar
+        document.getElementById('curriculum-search').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('#curriculum-list .list-item').forEach(item => {
+                const name = item.dataset.curriculumName.toLowerCase();
+                if (name.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
             });
         });
+    }
 
-        // --- RENDER FUNCTIONS ---
-
-        // 1. CLASS MANAGEMENT
-        async function renderClassManagement() {
-            pageTitle.textContent = 'Quản Lý Lớp Học';
-            mainContent.innerHTML = `<p>Đang tải...</p>`;
-            
-            const [classesSnap, studentsSnap, curriculumsSnap] = await Promise.all([
-                db.collection('classes').get(),
-                db.collection('users').where('role', '==', 'student').get(),
-                db.collection('curriculums').get()
-            ]);
-            const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const curriculums = curriculumsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            let classListHtml = classes.map(c => `
-                <div class="list-item border-l-4 border-transparent p-3 cursor-pointer" data-class-id="${c.id}">
-                    <p class="font-bold text-gray-800">${c.className}</p>
-                </div>
-            `).join('');
-
-            let curriculumOptions = curriculums.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-                    <div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
-                        <h2 class="text-xl font-bold mb-4">Danh sách Lớp học</h2>
-                        <div class="mb-4">
-                            <input id="new-class-name" class="w-full p-2 border rounded mb-2" placeholder="Tên lớp mới...">
-                            <select id="new-class-curriculum" class="w-full p-2 border rounded mb-2">
-                                <option value="">-- Chọn giáo trình --</option>
-                                ${curriculumOptions}
-                            </select>
-                            <button id="add-class-btn" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Thêm Lớp Mới</button>
-                        </div>
-                        <div id="class-list" class="overflow-y-auto flex-grow">${classListHtml}</div>
-                    </div>
-                    <div id="class-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-500">Chọn một lớp học để xem chi tiết và quản lý học sinh.</p>
-                    </div>
-                </div>
-            `;
-        }
+    async function renderCurriculumDetail(curriculumId) {
+        // ... (Không thay đổi)
+        const detailView = document.getElementById('curriculum-detail');
+        detailView.innerHTML = `<p>Đang tải...</p>`;
         
-        async function renderClassDetail(classId) {
-            const detailView = document.getElementById('class-detail');
-            detailView.innerHTML = `<p>Đang tải chi tiết lớp học...</p>`;
+        const curriculumDoc = await db.collection('curriculums').doc(curriculumId).get();
+        const curriculum = { id: curriculumDoc.id, ...curriculumDoc.data() };
+        const units = curriculum.units || {};
 
-            const [classDoc, studentsSnap] = await Promise.all([
-                db.collection('classes').doc(classId).get(),
-                db.collection('users').where('role', '==', 'student').get()
-            ]);
-            const classData = { id: classDoc.id, ...classDoc.data() };
-            const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            const studentsInClass = allStudents.filter(s => s.enrolledClasses && s.enrolledClasses.includes(classId));
-            const studentsNotInClass = allStudents.filter(s => !s.enrolledClasses || !s.enrolledClasses.includes(classId));
-
-            let studentsInClassHtml = studentsInClass.map(s => `
-                <tr class="border-b">
-                    <td class="py-2">${s.displayName}</td>
-                    <td>${s.email}</td>
-                    <td class="text-right"><button class="remove-student-btn text-red-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Xóa</button></td>
-                </tr>
-            `).join('');
-
-            let studentsNotInClassHtml = studentsNotInClass.map(s => `
-                <tr class="border-b">
-                    <td class="py-2">${s.displayName}</td>
-                    <td>${s.email}</td>
-                    <td class="text-right"><button class="add-student-btn text-green-500 text-sm" data-student-id="${s.id}" data-class-id="${classId}">Thêm</button></td>
-                </tr>
-            `).join('');
-
-            detailView.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <h2 class="text-2xl font-bold mb-6">${classData.className}</h2>
-                    <button class="delete-class-btn text-red-500 hover:text-red-700" data-id="${classId}"><i class="fas fa-trash-alt"></i> Xóa Lớp</button>
-                </div>
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="font-semibold mb-2">Học sinh trong lớp (${studentsInClass.length})</h3>
-                        <table class="w-full text-sm">${studentsInClassHtml}</table>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold mb-2">Học sinh chưa có trong lớp</h3>
-                        <table class="w-full text-sm">${studentsNotInClassHtml}</table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 2. STUDENT MANAGEMENT
-        async function renderStudentManagement() {
-            pageTitle.textContent = 'Quản Lý Học Sinh';
-            mainContent.innerHTML = `<p>Đang tải...</p>`;
-
-            const [studentsSnap, classesSnap] = await Promise.all([
-                db.collection('users').where('role', '==', 'student').get(),
-                db.collection('classes').get()
-            ]);
-            const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const allClasses = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            const studentsWithClass = allStudents.filter(s => s.enrolledClasses && s.enrolledClasses.length > 0);
-            const studentsWithoutClass = allStudents.filter(s => !s.enrolledClasses || s.enrolledClasses.length === 0);
-
-            let classOptions = allClasses.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
-
-            let withoutClassHtml = studentsWithoutClass.map(s => `
-                <tr class="border-b">
-                    <td class="py-2">${s.displayName}</td>
-                    <td class="flex items-center gap-2">
-                        <select class="add-student-to-class-select text-xs p-1 border rounded">
-                            <option value="">Chọn lớp</option>${classOptions}
-                        </select>
-                        <button class="add-student-to-class-btn text-green-500 text-sm" data-student-id="${s.id}">Thêm</button>
-                    </td>
-                </tr>
-            `).join('');
-
-            let withClassHtml = studentsWithClass.map(s => {
-                const classNames = (s.enrolledClasses || []).map(classId => {
-                    const foundClass = allClasses.find(c => c.id === classId);
-                    return foundClass ? foundClass.className : 'Lớp không xác định';
-                }).join(', ');
-                return `<tr class="border-b"><td class="py-2">${s.displayName}</td><td>${classNames}</td></tr>`;
-            }).join('');
-
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h2 class="text-xl font-bold mb-4">Học sinh chưa có lớp</h2>
-                        <table class="w-full text-sm">
-                            <thead><tr class="border-b"><th class="text-left pb-2">Tên</th><th class="text-left pb-2">Thêm vào lớp</th></tr></thead>
-                            <tbody>${withoutClassHtml}</tbody>
-                        </table>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h2 class="text-xl font-bold mb-4">Học sinh đã có lớp</h2>
-                        <table class="w-full text-sm">
-                            <thead><tr class="border-b"><th class="text-left pb-2">Tên</th><th class="text-left pb-2">Các lớp tham gia</th></tr></thead>
-                            <tbody>${withClassHtml}</tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 3. CONTENT MANAGEMENT
-        async function renderContentManagement() {
-            pageTitle.textContent = 'Quản Lý Giáo Trình';
-            mainContent.innerHTML = `<p>Đang tải...</p>`;
-            
-            const curriculumsSnap = await db.collection('curriculums').get();
-            let curriculumListHtml = curriculumsSnap.docs.map(doc => `
-                <div class="list-item border-l-4 border-transparent p-3 cursor-pointer" data-curriculum-id="${doc.id}">
-                    <p class="font-bold text-gray-800">${doc.data().name}</p>
-                </div>
-            `).join('');
-
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-                    <div class="md:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col h-full">
-                        <h2 class="text-xl font-bold mb-4">Danh sách Giáo trình</h2>
-                        <div id="curriculum-list" class="overflow-y-auto flex-grow">${curriculumListHtml}</div>
-                    </div>
-                    <div id="curriculum-detail" class="md:col-span-2 bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-500">Chọn một giáo trình để xem các unit và học phần.</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function renderCurriculumDetail(curriculumId) {
-            const detailView = document.getElementById('curriculum-detail');
-            detailView.innerHTML = `<p>Đang tải...</p>`;
-            
-            const curriculumDoc = await db.collection('curriculums').doc(curriculumId).get();
-            const curriculum = { id: curriculumDoc.id, ...curriculumDoc.data() };
-            const units = curriculum.units || {};
-
-            let unitsHtml = Object.keys(units).sort().map(unitKey => {
-                const unitModules = units[unitKey].modules.map(module => {
-                    const isSupplementary = module.isSupplementary;
-                    const colorClass = isSupplementary ? 'text-green-600' : 'text-blue-600';
-                    const icon = isSupplementary ? 'fa-star' : 'fa-book';
-                    return `
-                    <li class="module-item text-sm ml-4 flex items-center justify-between p-1 hover:bg-gray-100 rounded" data-unit="${unitKey}" data-content-id="${module.contentId}">
-                        <span><i class="fas ${icon} ${colorClass} mr-2 text-xs"></i>${module.title} (${module.type})</span>
-                    </li>`;
-                }).join('');
+        let unitsHtml = Object.keys(units).sort().map(unitKey => {
+            const unitModules = units[unitKey].modules.map(module => {
+                const isSupplementary = module.isSupplementary;
+                const colorClass = isSupplementary ? 'text-green-600' : 'text-blue-600';
+                const icon = isSupplementary ? 'fa-star' : 'fa-book';
                 return `
-                    <div class="mt-2">
-                        <p class="font-semibold unit-header bg-gray-100 p-2 rounded">${unitKey}</p>
-                        <ul class="module-list ml-4 mt-1 space-y-1">${unitModules}</ul>
-                    </div>
-                `;
+                <li class="module-item text-sm ml-4 flex items-center justify-between p-1 hover:bg-gray-100 rounded" data-unit="${unitKey}" data-content-id="${module.contentId}">
+                    <span><i class="fas ${icon} ${colorClass} mr-2 text-xs"></i>${module.title} (${module.type})</span>
+                </li>`;
             }).join('');
-
-            detailView.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h2 class="text-2xl font-bold mb-2">${curriculum.name}</h2>
-                        <p class="text-gray-600 mb-6">${curriculum.description || ''}</p>
-                    </div>
-                    <button class="context-menu-trigger text-gray-500 hover:text-gray-800" data-context-type="curriculum" data-id="${curriculum.id}"><i class="fas fa-ellipsis-h"></i></button>
-                </div>
-                <div class="border-t pt-4">
-                    <h3 class="font-semibold text-lg">Các Unit và Học phần</h3>
-                    <div class="mt-2">${unitsHtml || '<p class="text-sm text-gray-500 mt-2">Giáo trình này chưa có unit nào.</p>'}</div>
+            return `
+                <div class="mt-2">
+                    <p class="font-semibold unit-header bg-gray-100 p-2 rounded">${unitKey}</p>
+                    <ul class="module-list ml-4 mt-1 space-y-1">${unitModules}</ul>
                 </div>
             `;
-        }
+        }).join('');
 
-        // 4. ASSIGNMENT MANAGEMENT
-        async function renderAssignmentManagement() {
-            pageTitle.textContent = 'Giao Bài Tập';
-            mainContent.innerHTML = `<p>Đang tải...</p>`;
+        detailView.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2">${curriculum.name}</h2>
+                    <p class="text-gray-600 mb-6">${curriculum.description || ''}</p>
+                </div>
+                <button class="text-gray-500 hover:text-gray-800" onclick="alert('Menu chi tiết cho giáo trình này.')"><i class="fas fa-ellipsis-h"></i></button>
+            </div>
+            <div class="border-t pt-4">
+                <h3 class="font-semibold text-lg">Các Unit và Học phần</h3>
+                <div class="mt-2">${unitsHtml || '<p class="text-sm text-gray-500 mt-2">Giáo trình này chưa có unit nào.</p>'}</div>
+            </div>
+        `;
+    }
 
-            const [classesSnap, supplementarySnap] = await Promise.all([
-                db.collection("classes").get(),
-                db.collection("supplementary_modules").get()
-            ]);
+    // 4. ASSIGNMENT MANAGEMENT
+    async function renderAssignmentManagement() {
+        // ... (Không thay đổi)
+        pageTitle.textContent = 'Giao Bài Tập';
+        mainContent.innerHTML = `<p>Đang tải...</p>`;
 
-            const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const supplementaryModules = supplementarySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            let classOptions = classes.map(c => `<option value="${c.id}" data-curriculum-id="${c.curriculumId}">${c.className}</option>`).join('');
-            let supplementaryHtml = supplementaryModules.map(m => `
-                <label class="flex items-center p-2 rounded hover:bg-gray-100">
-                    <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${m.id}" data-module-title="${m.title}" data-module-type="${m.type}" data-source="supplementary">
-                    <span class="ml-3 text-sm text-gray-800">${m.title}</span>
-                </label>`).join('');
+        const [classesSnap, supplementarySnap] = await Promise.all([
+            db.collection("classes").get(),
+            db.collection("supplementary_modules").get()
+        ]);
 
-            mainContent.innerHTML = `
-                <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
-                    <div class="space-y-6">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="md:col-span-1">
-                                    <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label>
-                                    <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                                        <option value="">-- Chọn một lớp --</option>
-                                        ${classOptions}
-                                    </select>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
-                                    <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày 02/08/2025">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="border-t pt-6">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Chọn Học Phần Để Giao</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <h3 id="core-modules-title" class="font-bold text-gray-700 mb-2">Học phần trong Giáo trình</h3>
-                                    <div id="core-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
-                                        <p class="text-gray-500">Vui lòng chọn một lớp học để xem các học phần.</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-700 mb-2">Học phần Bổ sung</h3>
-                                    <div id="supplementary-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
-                                        ${supplementaryHtml}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
-                            Tạo Bài Tập
-                        </button>
-                    </div>
-                </div>`;
-        }
-
-        // --- GLOBAL EVENT LISTENER ---
-        mainContent.addEventListener('click', async (e) => {
-            // Class Management: Select a class
-            if (e.target.closest('.list-item[data-class-id]')) {
-                document.querySelectorAll('.list-item[data-class-id]').forEach(el => el.classList.remove('active'));
-                const item = e.target.closest('.list-item[data-class-id]');
-                item.classList.add('active');
-                await renderClassDetail(item.dataset.classId);
-            }
-            // Class Management: Add/Remove student
-            if (e.target.matches('.add-student-btn, .remove-student-btn')) {
-                const studentId = e.target.dataset.studentId;
-                const classId = e.target.dataset.classId;
-                const isAdding = e.target.classList.contains('add-student-btn');
-                
-                const studentRef = db.collection('users').doc(studentId);
-                const operation = isAdding ? firebase.firestore.FieldValue.arrayUnion : firebase.firestore.FieldValue.arrayRemove;
-
-                await studentRef.update({ enrolledClasses: operation(classId) });
-                await renderClassDetail(classId);
-            }
-            // Student Management: Add student to class
-            if (e.target.matches('.add-student-to-class-btn')) {
-                const studentId = e.target.dataset.studentId;
-                const selectEl = e.target.previousElementSibling;
-                const classId = selectEl.value;
-                if (!classId) return alert('Vui lòng chọn một lớp.');
-
-                const studentRef = db.collection('users').doc(studentId);
-                
-                await studentRef.update({ enrolledClasses: firebase.firestore.FieldValue.arrayUnion(classId) });
-                await renderStudentManagement();
-            }
-            // Content Management: Select a curriculum
-            if (e.target.closest('.list-item[data-curriculum-id]')) {
-                document.querySelectorAll('.list-item[data-curriculum-id]').forEach(el => el.classList.remove('active'));
-                const item = e.target.closest('.list-item[data-curriculum-id]');
-                item.classList.add('active');
-                await renderCurriculumDetail(item.dataset.curriculumId);
-            }
-            // Content Management: Toggle unit visibility
-            if (e.target.matches('.unit-header')) {
-                const moduleList = e.target.nextElementSibling;
-                if (moduleList) {
-                    moduleList.style.display = moduleList.style.display === 'block' ? 'none' : 'block';
-                }
-            }
-        });
-
-        mainContent.addEventListener('change', async (e) => {
-            // Assignment Tool: Class selector
-            if (e.target.id === 'class-selector') {
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const curriculumId = selectedOption.dataset.curriculumId;
-                const coreContainer = document.getElementById('core-modules-container');
-                if (!curriculumId) {
-                    coreContainer.innerHTML = '<p class="text-gray-500">Lớp này chưa có giáo trình.</p>';
-                    return;
-                }
-                coreContainer.innerHTML = '<p>Đang tải...</p>';
-                const curriculumDoc = await db.collection('curriculums').doc(curriculumId).get();
-                const units = curriculumDoc.data().units || {};
-                
-                let coreHtml = Object.keys(units).sort().map(unitKey => {
-                    const unitModules = units[unitKey].modules.map(module => `
-                        <label class="flex items-center p-2 rounded hover:bg-gray-100 ml-4">
-                            <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${module.contentId}" data-module-title="${module.title}" data-module-type="${module.type}" data-source="core">
-                            <span class="ml-3 text-sm text-gray-800">${module.title}</span>
-                        </label>
-                    `).join('');
-                    return `<div class="font-semibold text-gray-600">${unitKey}</div>${unitModules}`;
-                }).join('');
-                coreContainer.innerHTML = coreHtml;
-            }
-        });
+        const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const supplementaryModules = supplementarySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-    </script>
+        let classOptions = classes.map(c => `<option value="${c.id}" data-curriculum-id="${c.curriculumId}">${c.className}</option>`).join('');
+        let supplementaryHtml = supplementaryModules.map(m => `
+            <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${m.id}" data-module-title="${m.title}" data-module-type="${m.type}" data-source="supplementary">
+                <span class="ml-3 text-sm text-gray-800">${m.title}</span>
+            </label>`).join('');
+
+        mainContent.innerHTML = `
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-1">
+                                <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn lớp học:</label>
+                                <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                    <option value="">-- Chọn một lớp --</option>
+                                    ${classOptions}
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
+                                <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày 02/08/2025">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t pt-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">2. Chọn Học Phần Để Giao</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 id="core-modules-title" class="font-bold text-gray-700 mb-2">Học phần trong Giáo trình</h3>
+                                <div id="core-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                    <p class="text-gray-500">Vui lòng chọn một lớp học để xem các học phần.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-700 mb-2">Học phần Bổ sung</h3>
+                                <div id="supplementary-modules-container" class="space-y-2 p-4 bg-gray-50 rounded-md border h-64 overflow-y-auto">
+                                    ${supplementaryHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="create-assignment-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all text-lg">
+                        Tạo Bài Tập
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    // --- GLOBAL EVENT LISTENER (MODIFIED) ---
+    mainContent.addEventListener('click', async (e) => {
+        // --- NEW: Context menu logic ---
+        if (e.target.closest('.context-menu-trigger')) {
+            e.preventDefault();
+            const trigger = e.target.closest('.context-menu-trigger');
+            const id = trigger.dataset.id;
+            const name = trigger.dataset.name;
+            
+            contextMenu.innerHTML = `
+                <a href="#" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" data-action="add-unit" data-id="${id}">Thêm Unit</a>
+                <a href="#" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" data-action="rename-curriculum" data-id="${id}" data-name="${name}">Đổi tên</a>
+                <a href="#" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100" data-action="delete-curriculum" data-id="${id}" data-name="${name}">Xóa Giáo trình</a>
+            `;
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+            contextMenu.style.display = 'block';
+            return; // Stop further processing
+        }
+        
+        // --- NEW: Context menu actions ---
+        if (e.target.closest('#context-menu')) {
+            const actionTarget = e.target;
+            const action = actionTarget.dataset.action;
+            const id = actionTarget.dataset.id;
+            const name = actionTarget.dataset.name;
+
+            if (action === 'delete-curriculum') {
+                 if (confirm(`Bạn có chắc chắn muốn xóa giáo trình "${name}"? Hành động này không thể hoàn tác.`)) {
+                    try {
+                        await db.collection('curriculums').doc(id).delete();
+                        alert('Xóa thành công!');
+                        renderContentManagement();
+                    } catch (error) {
+                        alert('Lỗi khi xóa: ' + error.message);
+                    }
+                }
+            } else if (action === 'rename-curriculum') {
+                const newName = prompt('Nhập tên mới cho giáo trình:', name);
+                if (newName && newName.trim() !== '') {
+                     try {
+                        await db.collection('curriculums').doc(id).update({ name: newName.trim() });
+                        alert('Đổi tên thành công!');
+                        renderContentManagement();
+                    } catch (error) {
+                        alert('Lỗi khi đổi tên: ' + error.message);
+                    }
+                }
+            } else if (action === 'add-unit') {
+                alert(`Chức năng "Thêm Unit" cho giáo trình ID: ${id} chưa được cài đặt.`);
+                // Đây là nơi bạn sẽ code thêm logic để thêm Unit
+            }
+            contextMenu.style.display = 'none';
+            return;
+        }
+
+        // --- NEW: FIX "ADD NEW CLASS" ---
+        if (e.target.id === 'add-class-btn') {
+            const className = document.getElementById('new-class-name').value.trim();
+            const curriculumId = document.getElementById('new-class-curriculum').value;
+
+            if (!className || !curriculumId) {
+                alert('Vui lòng nhập tên lớp và chọn một giáo trình.');
+                return;
+            }
+
+            try {
+                await db.collection('classes').add({
+                    className: className,
+                    curriculumId: curriculumId
+                });
+                alert('Thêm lớp học thành công!');
+                renderClassManagement(); // Tải lại danh sách lớp
+            } catch (error) {
+                console.error("Error adding class: ", error);
+                alert('Đã có lỗi xảy ra khi thêm lớp. Vui lòng thử lại.');
+            }
+        }
+        
+        // Hide context menu if clicking elsewhere
+        if (!e.target.closest('.context-menu-trigger')) {
+            contextMenu.style.display = 'none';
+        }
+
+        // Class Management: Select a class (click on the item itself, not the ... icon)
+        if (e.target.closest('.list-item[data-class-id]') && !e.target.closest('.context-menu-trigger')) {
+            document.querySelectorAll('.list-item[data-class-id]').forEach(el => el.classList.remove('active'));
+            const item = e.target.closest('.list-item[data-class-id]');
+            item.classList.add('active');
+            await renderClassDetail(item.dataset.classId);
+        }
+        // Class Management: Add/Remove student
+        if (e.target.matches('.add-student-btn, .remove-student-btn')) {
+            const studentId = e.target.dataset.studentId;
+            const classId = e.target.dataset.classId;
+            const isAdding = e.target.classList.contains('add-student-btn');
+
+            const studentRef = db.collection('users').doc(studentId);
+            const operation = isAdding ? firebase.firestore.FieldValue.arrayUnion : firebase.firestore.FieldValue.arrayRemove;
+
+            await studentRef.update({
+                enrolledClasses: operation(classId)
+            });
+            await renderClassDetail(classId);
+        }
+        // Student Management: Add student to class
+        if (e.target.matches('.add-student-to-class-btn')) {
+            const studentId = e.target.dataset.studentId;
+            const selectEl = e.target.previousElementSibling;
+            const classId = selectEl.value;
+            if (!classId) return alert('Vui lòng chọn một lớp.');
+
+            const studentRef = db.collection('users').doc(studentId);
+
+            await studentRef.update({
+                enrolledClasses: firebase.firestore.FieldValue.arrayUnion(classId)
+            });
+            await renderStudentManagement();
+        }
+        // Content Management: Select a curriculum (click on the name)
+        if (e.target.closest('.list-item[data-curriculum-id]') && !e.target.closest('.context-menu-trigger')) {
+            document.querySelectorAll('.list-item[data-curriculum-id]').forEach(el => el.classList.remove('active'));
+            const item = e.target.closest('.list-item[data-curriculum-id]');
+            item.classList.add('active');
+            await renderCurriculumDetail(item.dataset.curriculumId);
+        }
+        // Content Management: Toggle unit visibility
+        if (e.target.matches('.unit-header')) {
+            const moduleList = e.target.nextElementSibling;
+            if (moduleList) {
+                moduleList.style.display = moduleList.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+    });
+
+    mainContent.addEventListener('change', async (e) => {
+        // ... (Không thay đổi)
+        if (e.target.id === 'class-selector') {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const curriculumId = selectedOption.dataset.curriculumId;
+            const coreContainer = document.getElementById('core-modules-container');
+            if (!curriculumId) {
+                coreContainer.innerHTML = '<p class="text-gray-500">Lớp này chưa có giáo trình.</p>';
+                return;
+            }
+            coreContainer.innerHTML = '<p>Đang tải...</p>';
+            const curriculumDoc = await db.collection('curriculums').doc(curriculumId).get();
+            const units = curriculumDoc.data().units || {};
+            
+            let coreHtml = Object.keys(units).sort().map(unitKey => {
+                const unitModules = units[unitKey].modules.map(module => `
+                    <label class="flex items-center p-2 rounded hover:bg-gray-100 ml-4">
+                        <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" value="${module.contentId}" data-module-title="${module.title}" data-module-type="${module.type}" data-source="core">
+                        <span class="ml-3 text-sm text-gray-800">${module.title}</span>
+                    </label>
+                `).join('');
+                return `<div class="font-semibold text-gray-600">${unitKey}</div>${unitModules}`;
+            }).join('');
+            coreContainer.innerHTML = coreHtml;
+        }
+    });
+</script>
 </body>
 </html>
