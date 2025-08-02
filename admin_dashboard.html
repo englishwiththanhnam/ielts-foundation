@@ -8,6 +8,43 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Dán đoạn này vào trong thẻ <style> của bạn */
+.tree-container ul {
+  padding-left: 20px;
+  border-left: 1px dashed #ccc;
+}
+.tree-container li {
+  list-style-type: none;
+  position: relative;
+}
+.tree-node {
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+}
+.tree-node:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+.tree-node .toggle-icon {
+  margin-right: 8px;
+  width: 16px; /* Đảm bảo icon thẳng hàng */
+  display: inline-block;
+  text-align: center;
+}
+.tree-node.collapsed .toggle-icon::before {
+  content: '►'; /* Icon khi thu gọn */
+  font-size: 0.8em;
+}
+.tree-node .toggle-icon::before {
+  content: '▼'; /* Icon khi mở rộng */
+   font-size: 1em;
+}
+.tree-container .nested-list {
+  display: block; /* Mặc định mở */
+}
+.tree-container .nested-list.hidden {
+  display: none; /* Ẩn đi khi thu gọn */
+}
         body { font-family: 'Be Vietnam Pro', sans-serif; }
         .sidebar-link { transition: all 0.2s ease-in-out; }
         .sidebar-link:hover { background-color: #4f46e5; color: white; }
