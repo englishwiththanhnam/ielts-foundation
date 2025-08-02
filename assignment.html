@@ -1,79 +1,151 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết Bài tập - English with Thành Nam</title>
-    
-    <!-- Các thư viện bên ngoài -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Liên kết tới tệp CSS thống nhất của hệ thống -->
-    <link rel="stylesheet" href="styles/main.css">
-</head>
-<body>
-    <!-- Hiệu ứng nền động -->
-    <div class="background-shapes">
-        <div class="shape shape1"></div>
-        <div class="shape shape2"></div>
-        <div class="shape shape3"></div>
-        <div class="shape shape4"></div>
-    </div>
+// js/app/assignment.js
+// File này chứa logic chính cho trang assignment.html
 
-    <!-- Bố cục ứng dụng chung -->
-    <div class="app-layout">
+import { db, firestore } from '../config/firebase-config.js';
+import { checkAuthState, setupUserSession } from '../modules/auth.js';
+import { countTotalStructures } from '../modules/vocab-logic.js';
+
+const loadingState = document.getElementById('loading-state');
+const modulesList = document.getElementById('modules-list');
+const assignmentTitleEl = document.getElementById('assignment-title');
+const assignmentDeadlineEl = document.getElementById('assignment-deadline');
+
+function main() {
+    checkAuthState(
+        (user) => {
+            setupUserSession(user, 'user-display-name', 'logout-button');
+            loadAssignmentDetails(user.uid);
+        },
+        () => {
+            window.location.href = '/login.html';
+        }
+    );
+}
+
+async function loadAssignmentDetails(userId) {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const assignmentId = urlParams.get('id');
+        if (!assignmentId) {
+            throw new Error("URL không hợp lệ. Vui lòng quay lại và thử lại.");
+        }
+
+        const [assignmentDoc, progressDoc] = await Promise.all([
+            db.collection('assignments').doc(assignmentId).get(),
+            db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get()
+        ]);
+
+        if (!assignmentDoc.exists) {
+            throw new Error("Không tìm thấy bài tập này.");
+        }
         
-        <!-- Sidebar (thanh điều hướng bên trái) -->
-        <nav id="sidebar" class="glass-panel">
+        const assignmentData = assignmentDoc.data();
+        const studentProgress = progressDoc.exists ? progressDoc.data() : {};
+
+        assignmentTitleEl.textContent = assignmentData.title;
+        const deadline = assignmentData.deadline.toDate();
+        assignmentDeadlineEl.textContent = `Hạn chót: ${deadline.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+
+        const moduleIds = assignmentData.moduleIds;
+        if (!moduleIds || moduleIds.length === 0) {
+            modulesList.innerHTML = '<div class="glass-panel text-center">Bài tập này không có học phần nào.</div>';
+            loadingState.style.display = 'none';
+            return;
+        }
+        
+        // SỬA LỖI: Không dùng truy vấn 'in' để tránh giới hạn 10 phần tử.
+        // Thay vào đó, lấy từng document một cách an toàn bằng Promise.all.
+        const modulePromises = moduleIds.map(id => db.collection('modules').doc(id).get());
+        const moduleDocs = await Promise.all(modulePromises);
+        const modules = moduleDocs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // KẾT THÚC SỬA LỖI
+
+        modulesList.innerHTML = '';
+        modules.forEach(module => {
+            // Kiểm tra xem module có thực sự tồn tại không trước khi render
+            if (module.title) {
+                const moduleProgress = studentProgress.moduleProgress?.[module.id] || {};
+                const moduleElement = createModuleElement(assignmentId, module, moduleProgress);
+                modulesList.appendChild(moduleElement);
+            }
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi tải chi tiết bài tập:", error);
+        modulesList.innerHTML = `<div class="glass-panel text-center text-red-500">${error.message}</div>`;
+    } finally {
+        loadingState.style.display = 'none';
+    }
+}
+
+
+function createModuleElement(assignmentId, module, progress) {
+    const totalWords = module.words?.length || 0;
+    const learnedWords = progress.words?.filter(w => w.isLearned).length || 0;
+    const vocabProgressPercent = totalWords > 0 ? Math.round((learnedWords / totalWords) * 100) : 0;
+
+    // SỬ DỤNG HÀM TÍNH TOÁN ĐÃ ĐƯỢC THỐNG NHẤT
+    const totalStructures = countTotalStructures(module.words);
+    const learnedStructures = progress.structures?.filter(s => s.isLearned).length || 0;
+    const structureProgressPercent = totalStructures > 0 ? Math.round((learnedStructures / totalStructures) * 100) : 0;
+
+    const testHistory = progress.testHistory || [];
+    const lastTest = testHistory.length > 0 ? testHistory[testHistory.length - 1] : null;
+    const isCompleted = vocabProgressPercent === 100 && structureProgressPercent === 100 && lastTest && lastTest.score >= 75;
+
+    const element = document.createElement('div');
+    element.className = `glass-panel`;
+
+    let testHistoryHtml = '<p class="text-xs text-slate-500 mt-2">Chưa có lần test nào.</p>';
+    if (testHistory.length > 0) {
+        testHistoryHtml = '<ul class="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">';
+        testHistory.slice(-3).reverse().forEach(test => {
+            // Thêm kiểm tra 'test.timestamp' để tránh lỗi nếu dữ liệu cũ không có
+            const testDate = test.timestamp ? test.timestamp.toDate().toLocaleDateString('vi-VN') : 'N/A';
+            testHistoryHtml += `<li>Ngày ${testDate}: <span class="font-semibold ${test.score >= 75 ? 'text-green-600' : 'text-red-600'}">${test.score}%</span> (${test.correct}/${test.total} câu)</li>`;
+        });
+        testHistoryHtml += '</ul>';
+    }
+
+    element.innerHTML = `
+        <a href="vocab_app.html?assignmentId=${assignmentId}&vocabId=${module.id}" class="flex justify-between items-center hover:opacity-80 transition-opacity">
+            <div class="flex items-center">
+                <i class="fas ${isCompleted ? 'fa-check-circle text-green-500' : 'fa-book-open text-violet-500'} mr-4 text-2xl"></i>
+                <div>
+                    <span class="font-semibold text-lg text-slate-800">${module.title}</span>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <span class="text-violet-600 font-semibold mr-2">${isCompleted ? 'Đã hoàn thành' : 'Bắt đầu học'}</span>
+                <i class="fas fa-arrow-right text-violet-600"></i>
+            </div>
+        </a>
+        <div class="mt-4 pt-4 border-t border-white/30 space-y-3">
             <div>
-                <div class="text-center mb-10">
-                    <h1 class="text-2xl font-bold text-slate-800">Bài Tập</h1>
-                    <p class="text-sm text-slate-600" id="user-display-name">Đang tải...</p>
+                <div class="flex justify-between items-center text-sm mb-1">
+                    <span class="font-medium text-slate-600">Tiến độ Từ vựng:</span>
+                    <span class="font-bold text-violet-600">${learnedWords} / ${totalWords}</span>
                 </div>
-                <div id="sidebar-nav" class="flex-grow">
-                     <a href="dashboard.html" class="sidebar-nav-btn">
-                        <i class="fas fa-arrow-left"></i>
-                        <span>Quay lại Dashboard</span>
-                    </a>
+                <div class="progress-bar-container">
+                    <div class="progress-bar progress-bar-vocab" style="width: ${vocabProgressPercent}%"></div>
                 </div>
             </div>
-            <div class="mt-auto">
-                <button id="logout-button" class="sidebar-nav-btn w-full justify-center text-red-500 hover:bg-red-100 hover:text-red-700">
-                    <i class="fas fa-sign-out-alt mr-2"></i>
-                    <span>Đăng xuất</span>
-                </button>
-            </div>
-        </nav>
-        
-        <!-- Lớp phủ cho sidebar trên di động -->
-        <div id="sidebar-overlay"></div>
-
-        <!-- Nội dung chính của trang -->
-        <main id="app">
-             <header class="main-header">
-                <button id="menu-toggle-btn" class="lg:hidden">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                <div class="text-left">
-                    <h1 id="assignment-title" class="text-3xl lg:text-4xl font-bold text-slate-800">Đang tải bài tập...</h1>
-                    <p id="assignment-deadline" class="text-red-500 font-semibold mt-1 lg:mt-2"></p>
+            <div>
+                <div class="flex justify-between items-center text-sm mb-1">
+                    <span class="font-medium text-slate-600">Tiến độ Cấu trúc:</span>
+                    <span class="font-bold text-blue-600">${learnedStructures} / ${totalStructures}</span>
                 </div>
-            </header>
-
-            <div id="main-content">
-                <div id="loading-state" class="text-center text-lg text-slate-600">
-                    <i class="fas fa-spinner fa-spin mr-2"></i> Đang tải chi tiết các học phần...
-                </div>
-                <div id="modules-list" class="space-y-6">
-                    <!-- Danh sách học phần sẽ được chèn vào đây bằng JavaScript -->
+                <div class="progress-bar-container">
+                    <div class="progress-bar progress-bar-structure" style="width: ${structureProgressPercent}%"></div>
                 </div>
             </div>
-        </main>
-    </div>
+            <div class="mt-2">
+                <h4 class="text-sm font-medium text-slate-600">Kết quả Test gần nhất:</h4>
+                ${testHistoryHtml}
+            </div>
+        </div>
+    `;
+    return element;
+}
 
-    <!-- Script chính của trang, sử dụng type="module" -->
-    <script type="module" src="js/app/assignment.js"></script>
-</body>
-</html>
+document.addEventListener('DOMContentLoaded', main);
