@@ -1,39 +1,27 @@
 // js/app/assignment.js
 // File này chứa logic chính cho trang assignment.html
 
-// --- IMPORT CÁC MODULE CẦN THIẾT ---
 import { db, firestore } from '../config/firebase-config.js';
 import { checkAuthState, setupUserSession } from '../modules/auth.js';
+import { countTotalStructures } from '../modules/vocab-logic.js';
 
-// --- LẤY CÁC PHẦN TỬ HTML (DOM ELEMENTS) ---
 const loadingState = document.getElementById('loading-state');
 const modulesList = document.getElementById('modules-list');
 const assignmentTitleEl = document.getElementById('assignment-title');
 const assignmentDeadlineEl = document.getElementById('assignment-deadline');
 
-// --- HÀM KHỞI ĐỘNG CHÍNH ---
 function main() {
-    // Sử dụng module auth để kiểm tra trạng thái đăng nhập
     checkAuthState(
-        (user) => { // Trường hợp đã đăng nhập
-            console.log("User is logged in. Loading assignment details...");
-            // Thiết lập tên người dùng và nút đăng xuất
+        (user) => {
             setupUserSession(user, 'user-display-name', 'logout-button');
-            // Bắt đầu tải dữ liệu bài tập
             loadAssignmentDetails(user.uid);
         },
-        () => { // Trường hợp chưa đăng nhập
-            console.log("User is not logged in. Redirecting to login page.");
-            // Chuyển hướng về trang đăng nhập
+        () => {
             window.location.href = '/login.html';
         }
     );
 }
 
-/**
- * Tải và hiển thị chi tiết bài tập từ Firestore.
- * @param {string} userId - ID của người dùng hiện tại.
- */
 async function loadAssignmentDetails(userId) {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +30,6 @@ async function loadAssignmentDetails(userId) {
             throw new Error("URL không hợp lệ. Vui lòng quay lại và thử lại.");
         }
 
-        // Tải đồng thời thông tin bài tập và tiến độ của học sinh
         const [assignmentDoc, progressDoc] = await Promise.all([
             db.collection('assignments').doc(assignmentId).get(),
             db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get()
@@ -55,12 +42,10 @@ async function loadAssignmentDetails(userId) {
         const assignmentData = assignmentDoc.data();
         const studentProgress = progressDoc.exists ? progressDoc.data() : {};
 
-        // Hiển thị thông tin chung của bài tập
         assignmentTitleEl.textContent = assignmentData.title;
         const deadline = assignmentData.deadline.toDate();
         assignmentDeadlineEl.textContent = `Hạn chót: ${deadline.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
 
-        // Tải thông tin các học phần (modules)
         const moduleIds = assignmentData.moduleIds;
         if (!moduleIds || moduleIds.length === 0) {
             modulesList.innerHTML = '<div class="glass-panel text-center">Bài tập này không có học phần nào.</div>';
@@ -70,7 +55,6 @@ async function loadAssignmentDetails(userId) {
         const modulesSnap = await db.collection('modules').where(firestore.FieldPath.documentId(), 'in', moduleIds).get();
         const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Render danh sách học phần ra giao diện
         modulesList.innerHTML = '';
         modules.forEach(module => {
             const moduleProgress = studentProgress.moduleProgress?.[module.id] || {};
@@ -82,42 +66,26 @@ async function loadAssignmentDetails(userId) {
         console.error("Lỗi khi tải chi tiết bài tập:", error);
         modulesList.innerHTML = `<div class="glass-panel text-center text-red-500">${error.message}</div>`;
     } finally {
-        // Ẩn trạng thái "đang tải"
         loadingState.style.display = 'none';
     }
 }
 
-/**
- * Tạo một phần tử HTML cho một học phần.
- * @param {string} assignmentId - ID của bài tập.
- * @param {object} module - Dữ liệu của học phần.
- * @param {object} progress - Dữ liệu tiến độ của học phần đó.
- * @returns {HTMLElement} - Phần tử div chứa thông tin học phần.
- */
 function createModuleElement(assignmentId, module, progress) {
-    // Tính toán tiến độ từ vựng
     const totalWords = module.words?.length || 0;
     const learnedWords = progress.words?.filter(w => w.isLearned).length || 0;
     const vocabProgressPercent = totalWords > 0 ? Math.round((learnedWords / totalWords) * 100) : 0;
 
-    // Tạm thời sử dụng lại logic đếm cấu trúc đơn giản.
-    // Chúng ta sẽ thay thế bằng module chung ở các bước sau.
-    const totalStructures = (module.words || []).reduce((acc, word) => {
-        if (word.structure) {
-            return acc + (word.structure.split(';').filter(Boolean).length);
-        }
-        return acc;
-    }, 0);
+    // SỬ DỤNG HÀM TÍNH TOÁN ĐÃ ĐƯỢC THỐNG NHẤT
+    const totalStructures = countTotalStructures(module.words);
     const learnedStructures = progress.structures?.filter(s => s.isLearned).length || 0;
     const structureProgressPercent = totalStructures > 0 ? Math.round((learnedStructures / totalStructures) * 100) : 0;
 
-    // Kiểm tra trạng thái hoàn thành
     const testHistory = progress.testHistory || [];
     const lastTest = testHistory.length > 0 ? testHistory[testHistory.length - 1] : null;
     const isCompleted = vocabProgressPercent === 100 && structureProgressPercent === 100 && lastTest && lastTest.score >= 75;
 
     const element = document.createElement('div');
-    element.className = `glass-panel`; // Sử dụng class chung cho giao diện đồng nhất
+    element.className = `glass-panel`;
 
     let testHistoryHtml = '<p class="text-xs text-slate-500 mt-2">Chưa có lần test nào.</p>';
     if (testHistory.length > 0) {
@@ -170,6 +138,4 @@ function createModuleElement(assignmentId, module, progress) {
     return element;
 }
 
-
-// Chạy hàm main khi toàn bộ cây DOM đã được trình duyệt xây dựng xong.
 document.addEventListener('DOMContentLoaded', main);
