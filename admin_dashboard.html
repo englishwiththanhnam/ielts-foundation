@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - English with Thành Nam</title>
+    <title>Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -144,18 +144,12 @@
      */
     async function renderAssignmentCreator() {
         pageTitle.textContent = 'Giao Bài tập';
-        mainContent.innerHTML = `<p>Đang tải dữ liệu lớp học và học phần...</p>`;
+        mainContent.innerHTML = `<p>Đang tải dữ liệu học phần...</p>`;
         
         try {
-            const [classesSnap, modulesSnap] = await Promise.all([
-                db.collection("classes").get(),
-                db.collection("modules_content").get() // Collection mới để lưu học phần
-            ]);
-
-            const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const modulesSnap = await db.collection("modules").orderBy("createdAt", "desc").get();
             const modules = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const classOptions = classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
             const moduleCheckboxes = modules.map(m => `
                 <label class="flex items-center p-2 rounded hover:bg-gray-100">
                     <input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded module-checkbox" value="${m.id}">
@@ -164,25 +158,18 @@
             `).join('');
 
             mainContent.innerHTML = `
-            <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
                 <div class="space-y-6">
                     <div>
                         <h2 class="text-xl font-semibold text-gray-800 mb-4">1. Thông tin Bài tập</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="class-selector" class="block text-sm font-medium text-gray-700 mb-1">Giao cho lớp:</label>
-                                <select id="class-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                                    <option value="">-- Chọn một lớp --</option>
-                                    ${classOptions}
-                                </select>
+                            <div class="md:col-span-2">
+                                <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
+                                <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày ${new Date().toLocaleDateString('vi-VN')}">
                             </div>
                             <div>
                                 <label for="deadline-date" class="block text-sm font-medium text-gray-700 mb-1">Hạn chót (Deadline):</label>
                                 <input type="date" id="deadline-date" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="assignment-title" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề bài tập:</label>
-                                <input type="text" id="assignment-title" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: Bài tập về nhà ngày ${new Date().toLocaleDateString('vi-VN')}">
                             </div>
                         </div>
                     </div>
@@ -199,33 +186,27 @@
             </div>`;
 
             document.getElementById('create-assignment-btn').addEventListener('click', async () => {
-                const classId = document.getElementById('class-selector').value;
                 const title = document.getElementById('assignment-title').value.trim();
                 const deadlineStr = document.getElementById('deadline-date').value;
+                if (!title || !deadlineStr) return alert('Vui lòng nhập tiêu đề và deadline.');
 
-                if (!classId || !title || !deadlineStr) {
-                    return alert('Vui lòng chọn lớp, nhập tiêu đề và deadline.');
-                }
-
-                const deadline = firebase.firestore.Timestamp.fromDate(new Date(deadlineStr));
+                // Đặt giờ của deadline là cuối ngày (23:59:59)
+                const deadlineDate = new Date(deadlineStr);
+                deadlineDate.setHours(23, 59, 59, 999);
+                const deadline = firebase.firestore.Timestamp.fromDate(deadlineDate);
+                
                 const selectedModuleIds = Array.from(document.querySelectorAll('.module-checkbox:checked')).map(el => el.value);
-
-                if (selectedModuleIds.length === 0) {
-                    return alert('Vui lòng chọn ít nhất một học phần để giao.');
-                }
+                if (selectedModuleIds.length === 0) return alert('Vui lòng chọn ít nhất một học phần để giao.');
                 
                 try {
-                    await db.collection('assignments').add({
-                        classId, title, deadline, moduleIds: selectedModuleIds, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await db.collection('assignments').add({ title, deadline, moduleIds: selectedModuleIds, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                     alert('Giao bài tập thành công!');
-                    document.getElementById('nav-assignments').click(); // Refresh lại trang
+                    document.getElementById('nav-assignments').click();
                 } catch (error) {
                     console.error("Lỗi khi giao bài: ", error);
                     alert("Đã có lỗi xảy ra. Vui lòng thử lại.");
                 }
             });
-
         } catch (error) {
             mainContent.innerHTML = `<p class="text-red-500">Lỗi tải dữ liệu: ${error.message}</p>`;
         }
@@ -262,22 +243,22 @@
                 const processedWords = processDataSmartForSave(vocabData, structureData);
                 
                 statusEl.textContent = 'Đang tải lên Firestore...';
-                await db.collection('modules_content').add({
+                await db.collection('modules').add({
                     title: title,
                     type: 'vocab',
-                    words: processedWords
+                    words: processedWords,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 statusEl.innerHTML = `🎉 <b>THÀNH CÔNG!</b> Đã lưu học phần "${title}" vào kho.`;
                 alert('Tải lên học phần thành công!');
-                // Xóa form để chuẩn bị cho lần nhập liệu tiếp theo
+                // Clear form for next entry
                 document.getElementById('module-title').value = '';
                 document.getElementById('col-word').value = '';
                 document.getElementById('col-type').value = '';
                 document.getElementById('col-pronunciation').value = '';
                 document.getElementById('col-meaning-vocab').value = '';
                 document.getElementById('col-structures-combined').value = '';
-
             } catch (error) {
                 statusEl.textContent = `Lỗi: ${error.message}`;
                 console.error(error);
@@ -297,24 +278,16 @@
             const students = studentsSnap.docs.map(doc => doc.data());
 
             const studentRows = students.map(s => `
-                <tr class="border-b">
-                    <td class="py-3 px-4 font-medium">${s.displayName || '(Chưa có tên)'}</td>
-                    <td class="py-3 px-4">${s.email}</td>
-                </tr>
+                <tr class="border-b"><td class="py-3 px-4 font-medium">${s.displayName || '(Chưa có tên)'}</td><td class="py-3 px-4">${s.email}</td></tr>
             `).join('');
 
             mainContent.innerHTML = `
                 <div class="bg-white rounded-lg shadow-lg">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold">Danh sách Học sinh (${students.length})</h2>
-                    </div>
+                    <div class="p-6"><h2 class="text-xl font-bold">Danh sách Học sinh (${students.length})</h2></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="py-3 px-4">Tên hiển thị</th>
-                                    <th scope="col" class="py-3 px-4">Email</th>
-                                </tr>
+                                <tr><th scope="col" class="py-3 px-4">Tên hiển thị</th><th scope="col" class="py-3 px-4">Email</th></tr>
                             </thead>
                             <tbody>
                                 ${studentRows || '<tr><td colspan="2" class="p-4 text-center">Không có học sinh nào.</td></tr>'}
