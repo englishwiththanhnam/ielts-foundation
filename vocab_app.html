@@ -8,300 +8,79 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* --- HIGH-CONTRAST LIGHT & DARK THEME --- */
-        :root {
-            --blur-intensity: 12px;
-            --saturation-intensity: 150%;
-            --glass-bg-color: rgba(255, 255, 255, 0.45);
-            --glass-border-color: rgba(255, 255, 255, 0.6);
-            --shadow-color: rgba(67, 56, 202, 0.15);
-            --primary-accent: #6d28d9;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --app-bg-start: #f5f7ff;
-            --app-bg-end: #e0e7ff;
-        }
-
-        body.dark {
-            --glass-bg-color: rgba(29, 39, 58, 0.45);
-            --glass-border-color: rgba(255, 255, 255, 0.2);
-            --shadow-color: rgba(0, 0, 0, 0.25);
-            --primary-accent: #a78bfa;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --app-bg-start: #0f172a;
-            --app-bg-end: #1e293b;
-        }
-
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-            background-color: var(--app-bg-start);
-            background-image: linear-gradient(135deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            position: relative;
-        }
-        
-        body.sidebar-open {
-            overflow: hidden;
-        }
-
-        .background-shapes {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-            filter: blur(15px);
-            transition: opacity 0.5s ease;
-        }
-
+        :root { --blur-intensity: 12px; --saturation-intensity: 150%; --glass-bg-color: rgba(255, 255, 255, 0.45); --glass-border-color: rgba(255, 255, 255, 0.6); --shadow-color: rgba(67, 56, 202, 0.15); --primary-accent: #6d28d9; --text-primary: #0f172a; --text-secondary: #475569; --app-bg-start: #f5f7ff; --app-bg-end: #e0e7ff; }
+        body.dark { --glass-bg-color: rgba(29, 39, 58, 0.45); --glass-border-color: rgba(255, 255, 255, 0.2); --shadow-color: rgba(0, 0, 0, 0.25); --primary-accent: #a78bfa; --text-primary: #f1f5f9; --text-secondary: #94a3b8; --app-bg-start: #0f172a; --app-bg-end: #1e293b; }
+        body { font-family: 'Be Vietnam Pro', sans-serif; background-color: var(--app-bg-start); background-image: linear-gradient(135deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%); color: var(--text-primary); overflow-x: hidden; position: relative; }
+        body.sidebar-open { overflow: hidden; }
+        .background-shapes { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .shape { position: absolute; border-radius: 50%; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); filter: blur(15px); transition: opacity 0.5s ease; }
         .shape1 { width: 250px; height: 250px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); top: 10%; left: 5%; animation: float 28s infinite alternate ease-in-out; }
         .shape2 { width: 180px; height: 180px; background: linear-gradient(135deg, #14b8a6, #67e8f9); bottom: 15%; right: 10%; animation: float 32s infinite alternate ease-in-out; }
         .shape3 { width: 120px; height: 120px; background: linear-gradient(135deg, #a78bfa, #c4b5fd); top: 20%; right: 25%; animation: float 24s infinite alternate ease-in-out; }
         .shape4 { width: 80px; height: 80px; background: linear-gradient(135deg, #93c5fd, #bfdbfe); bottom: 5%; left: 30%; animation: float 20s infinite alternate ease-in-out; }
-
-        body.dark .shape {
-            opacity: 0.4;
-        }
-
-        @keyframes float {
-            from { transform: translateY(20px) scale(1) rotate(0deg); }
-            to { transform: translateY(-20px) scale(1.05) rotate(20deg); }
-        }
-
+        body.dark .shape { opacity: 0.4; }
+        @keyframes float { from { transform: translateY(20px) scale(1) rotate(0deg); } to { transform: translateY(-20px) scale(1.05) rotate(20deg); } }
         .app-layout { display: flex; height: 100vh; width: 100vw; position: relative; z-index: 1; transition: padding-left 0.3s ease-in-out; }
-
-        .glass-panel {
-            position: relative;
-            background: var(--glass-bg-color);
-            backdrop-filter: blur(var(--blur-intensity)) saturate(var(--saturation-intensity));
-            -webkit-backdrop-filter: blur(var(--blur-intensity)) saturate(var(--saturation-intensity));
-            border-radius: 24px;
-            border: 1px solid var(--glass-border-color);
-            box-shadow: 0 8px 32px 0 var(--shadow-color), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            overflow: hidden;
-        }
-
-        .glass-panel::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -25%;
-            width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.35), transparent 60%);
-            border-radius: inherit;
-            filter: blur(5px);
-            pointer-events: none;
-            opacity: 0.8;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        
+        .glass-panel { position: relative; background: var(--glass-bg-color); backdrop-filter: blur(var(--blur-intensity)) saturate(var(--saturation-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity)) saturate(var(--saturation-intensity)); border-radius: 24px; border: 1px solid var(--glass-border-color); box-shadow: 0 8px 32px 0 var(--shadow-color), inset 0 2px 4px rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
+        .glass-panel::after { content: ''; position: absolute; top: 0; left: -25%; width: 100%; height: 100%; background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.35), transparent 60%); border-radius: inherit; filter: blur(5px); pointer-events: none; opacity: 0.8; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .card { padding: 1.5rem; }
-
-        #sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 260px;
-            padding: 1.5rem;
-            z-index: 40;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        body.sidebar-open #sidebar {
-            transform: translateX(0);
-        }
-
-        @media (min-width: 1024px) {
-            #sidebar {
-                position: relative;
-                transform: translateX(0);
-                flex-shrink: 0;
-            }
-            .app-layout.sidebar-collapsed #sidebar {
-                transform: translateX(-100%);
-                margin-left: -260px;
-            }
-        }
-        
-        #sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-        }
-        
-        body.sidebar-open #sidebar-overlay {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        @media (min-width: 1024px) {
-            #sidebar-overlay {
-                display: none;
-            }
-        }
-
+        #sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 260px; padding: 1.5rem; z-index: 40; transform: translateX(-100%); transition: transform 0.3s ease-in-out; display: flex; flex-direction: column; }
+        body.sidebar-open #sidebar { transform: translateX(0); }
+        @media (min-width: 1024px) { #sidebar { position: relative; transform: translateX(0); flex-shrink: 0; } .app-layout.sidebar-collapsed #sidebar { transform: translateX(-100%); margin-left: -260px; } }
+        #sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 30; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        body.sidebar-open #sidebar-overlay { opacity: 1; visibility: visible; }
+        @media (min-width: 1024px) { #sidebar-overlay { display: none; } }
         .sidebar-nav-btn { display: flex; align-items: center; padding: 12px 16px; border-radius: 12px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s ease-in-out; margin-bottom: 8px; }
         .sidebar-nav-btn i { width: 20px; margin-right: 16px; text-align: center; }
         .sidebar-nav-btn:hover { background-color: rgba(255, 255, 255, 0.4); color: var(--text-primary); transform: translateX(5px) scale(1.03); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .sidebar-nav-btn.active { background-color: var(--primary-accent); color: white; box-shadow: 0 4px 12px rgba(91, 33, 182, 0.3); transform: translateX(5px) scale(1.03); }
-        
-        body.dark .sidebar-nav-btn.active {
-            color: #1e293b;
-            box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
-        }
-        body.dark .sidebar-nav-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-
+        body.dark .sidebar-nav-btn.active { color: #1e293b; box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3); }
+        body.dark .sidebar-nav-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
         #app { flex-grow: 1; height: 100vh; overflow-y: auto; padding: 1.5rem; transition: margin-left 0.3s ease-in-out; }
-        @media (min-width: 1024px) {
-            #app { padding: 2rem; }
-        }
+        @media (min-width: 1024px) { #app { padding: 2rem; } }
         #app::-webkit-scrollbar { width: 8px; }
         #app::-webkit-scrollbar-track { background: transparent; }
         #app::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.1); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
         #app::-webkit-scrollbar-thumb:hover { background-color: rgba(0, 0, 0, 0.2); }
-
-        .main-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        #menu-toggle-btn {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(4px);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-primary);
-            flex-shrink: 0;
-        }
-
+        .main-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+        #menu-toggle-btn { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(4px); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-primary); flex-shrink: 0; }
         .btn { padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; transform: translateY(0); }
         .btn-main-action { background: var(--primary-accent); color: white; border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(91, 33, 182, 0.25); }
         body.dark .btn-main-action { color: #1e293b; }
         .btn-main-action:hover { background: #5b21b6; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(91, 33, 182, 0.4); }
         body.dark .btn-main-action:hover { background: #9333ea; }
-
         .btn-secondary { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); color: var(--text-primary); border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.7); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         body.dark .btn-secondary { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
         body.dark .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
-
         .btn:disabled { background-color: rgba(200, 200, 200, 0.7) !important; cursor: not-allowed; opacity: 0.7; transform: none !important; box-shadow: none !important; }
         body.dark .btn:disabled { background-color: rgba(71, 85, 105, 0.7) !important; }
-
-        .answer-option {
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            text-align: center;
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.2);
-        }
-        body.dark .answer-option {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .answer-option:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.6);
-            border-color: rgba(255, 255, 255, 0.8);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.3);
-        }
-        body.dark .answer-option:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .answer-option.selected {
-            background-color: var(--primary-accent) !important;
-            border-color: var(--primary-accent) !important;
-            color: white !important;
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 6px 20px rgba(91, 33, 182, 0.3);
-        }
-        body.dark .answer-option.selected {
-            color: #1e293b !important;
-        }
-
-        .answer-option.correct {
-            background-color: #dcfce7 !important;
-            border-color: #22c55e !important;
-            color: #15803d !important;
-            cursor: not-allowed;
-        }
-        body.dark .answer-option.correct {
-            background-color: #052e16 !important;
-            border-color: #16a34a !important;
-            color: #a7f3d0 !important;
-        }
-
-        .answer-option.incorrect {
-            background-color: #fee2e2 !important;
-            border-color: #ef4444 !important;
-            color: #b91c1c !important;
-            animation: shake 0.5s;
-        }
-        body.dark .answer-option.incorrect {
-            background-color: #450a0a !important;
-            border-color: #dc2626 !important;
-            color: #fecaca !important;
-        }
-
+        .answer-option { background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.4); padding: 12px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease-in-out; text-align: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.2); }
+        body.dark .answer-option { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); }
+        .answer-option:hover:not(:disabled) { background: rgba(255, 255, 255, 0.6); border-color: rgba(255, 255, 255, 0.8); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.3); }
+        body.dark .answer-option:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+        .answer-option.selected { background-color: var(--primary-accent) !important; border-color: var(--primary-accent) !important; color: white !important; transform: translateY(-4px) scale(1.05); box-shadow: 0 6px 20px rgba(91, 33, 182, 0.3); }
+        body.dark .answer-option.selected { color: #1e293b !important; }
+        .answer-option.correct { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #15803d !important; cursor: not-allowed; }
+        body.dark .answer-option.correct { background-color: #052e16 !important; border-color: #16a34a !important; color: #a7f3d0 !important; }
+        .answer-option.incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #b91c1c !important; animation: shake 0.5s; }
+        body.dark .answer-option.incorrect { background-color: #450a0a !important; border-color: #dc2626 !important; color: #fecaca !important; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
         @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes scaleOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
-
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; }
         .modal.is-open { display: flex; }
         .modal-content { padding: 24px; width: 90%; max-width: 500px; animation: scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
         .modal.is-closing .modal-content { animation: scaleOut 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
-
         .modal-header { border-bottom: 1px solid rgba(255,255,255,0.3); display: flex; justify-content: space-between; align-items: center; }
         .close-button { color: #eee; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .close-button:hover { color: white; }
-
         #word-table th { position: sticky; top: 0; background: rgba(248, 250, 252, 0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 10; }
         body.dark #word-table th { background: rgba(30, 41, 59, 0.85); }
         body.dark #word-table td, body.dark #word-table th { color: var(--text-primary); }
-
         .dashboard-stat-card { transition: all 0.3s ease; }
         .dashboard-stat-card:hover { transform: translateY(-5px) scale(1.03); }
-
         .matching-column { display: flex; flex-direction: column; gap: 0.5rem; }
-
         .flashcard-container { perspective: 1000px; height: 300px; }
         .flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
         .flashcard.is-flipped { transform: rotateY(180deg); }
@@ -312,15 +91,12 @@
         body.dark .flashcard-back { background-color: rgba(71, 85, 105, 0.9); }
         .flashcard-front p { color: var(--primary-accent); }
         .flashcard-back p:first-child { color: #16a34a; }
-        
         input[type="text"], input[type="number"] { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border: 1px solid rgba(255, 255, 255, 0.5); color: var(--text-primary); transition: all 0.2s ease-in-out; }
         input[type="text"]:focus, input[type="number"]:focus { background: rgba(255, 255, 255, 0.7); border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3); outline: none; }
         body.dark input[type="text"], body.dark input[type="number"] { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
         body.dark input[type="text"]:focus, body.dark input[type="number"]:focus { background: rgba(255, 255, 255, 0.2); border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3); }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.5s ease forwards; }
-
         body.dark .text-slate-800, body.dark .text-slate-700, body.dark .text-violet-800 { color: var(--text-primary); }
         body.dark .text-slate-600 { color: var(--text-secondary); }
         body.dark .text-green-800 { color: #4ade80; }
@@ -440,6 +216,7 @@
             data: {
                 words: [],
                 structures: [],
+                testHistory: [],
                 wordFamilies: {},
                 sessionItems: [],
                 skippedItems: [], 
@@ -451,22 +228,9 @@
                 allPrepositions: ["on", "in", "at", "for", "with", "about", "of", "from", "to", "as", "against", "over", "into", "upon", "by", "towards", "of"],
                 stopWords: ["a", "an", "the", "be", "sb", "sth", "oneself", "doing"],
                 backupData: {
-                    adjective: {
-                        personality_positive: ['kind', 'friendly', 'honest', 'brave', 'calm', 'charming', 'witty'],
-                        personality_negative: ['rude', 'selfish', 'lazy', 'arrogant', 'bossy', 'cruel', 'moody'],
-                        emotion: ['happy', 'sad', 'angry', 'surprised', 'afraid', 'excited', 'worried'],
-                        general: ['big', 'small', 'hot', 'cold', 'new', 'old', 'good', 'bad']
-                    },
-                    noun: {
-                        abstract: ['love', 'hate', 'idea', 'dream', 'luck', 'truth', 'faith', 'hope'],
-                        person: ['teacher', 'doctor', 'artist', 'writer', 'friend', 'enemy', 'leader'],
-                        general: ['house', 'car', 'book', 'tree', 'water', 'time', 'money', 'world']
-                    },
-                    verb: {
-                        action: ['run', 'walk', 'eat', 'drink', 'sleep', 'talk', 'listen', 'watch'],
-                        cognition: ['think', 'believe', 'know', 'understand', 'remember', 'forget'],
-                        general: ['is', 'have', 'do', 'say', 'get', 'make', 'go', 'see']
-                    }
+                    adjective: { personality_positive: ['kind', 'friendly', 'honest', 'brave', 'calm', 'charming', 'witty'], personality_negative: ['rude', 'selfish', 'lazy', 'arrogant', 'bossy', 'cruel', 'moody'], emotion: ['happy', 'sad', 'angry', 'surprised', 'afraid', 'excited', 'worried'], general: ['big', 'small', 'hot', 'cold', 'new', 'old', 'good', 'bad'] },
+                    noun: { abstract: ['love', 'hate', 'idea', 'dream', 'luck', 'truth', 'faith', 'hope'], person: ['teacher', 'doctor', 'artist', 'writer', 'friend', 'enemy', 'leader'], general: ['house', 'car', 'book', 'tree', 'water', 'time', 'money', 'world'] },
+                    verb: { action: ['run', 'walk', 'eat', 'drink', 'sleep', 'talk', 'listen', 'watch'], cognition: ['think', 'believe', 'know', 'understand', 'remember', 'forget'], general: ['is', 'have', 'do', 'say', 'get', 'make', 'go', 'see'] }
                 }
             },
 
@@ -475,26 +239,20 @@
                 this.initModals();
                 this.initSidebarNav();
                 this.initResponsiveSidebar();
-
                 document.getElementById('main-content').innerHTML = `<div class="text-center text-lg text-slate-600">Đang tải dữ liệu người dùng...</div>`;
-
                 auth.onAuthStateChanged(async user => {
                     if (user) {
                         userId = user.uid;
                         const urlParams = new URLSearchParams(window.location.search);
                         assignmentId = urlParams.get('assignmentId');
                         moduleId = urlParams.get('vocabId');
-                        
                         document.getElementById('back-to-assignment-btn').href = `assignment.html?id=${assignmentId}`;
-
                         if (!assignmentId || !moduleId) {
                             document.getElementById('main-content').innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: URL không hợp lệ.</h1><p class="mt-2 text-slate-600">Vui lòng quay lại trang bài tập và thử lại.</p></div>`;
                             return;
                         }
-                        
                         await this.loadDataFromFirestore();
                         this.renderDashboard();
-
                     } else {
                         window.location.href = 'login.html';
                     }
@@ -504,31 +262,25 @@
             async loadDataFromFirestore() {
                 const mainContent = document.getElementById('main-content');
                 mainContent.innerHTML = `<div class="text-center text-lg text-slate-600">Đang tải bộ từ vựng...</div>`;
-                
                 const moduleDoc = await db.collection('modules').doc(moduleId).get();
                 if (!moduleDoc.exists) {
-                    mainContent.innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: Không tìm thấy học phần.</h1><p class="mt-2 text-slate-600">Vui lòng liên hệ giáo viên của bạn.</p></div>`;
+                    mainContent.innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: Không tìm thấy học phần.</h1></div>`;
                     throw new Error("Module not found");
                 }
                 const moduleData = moduleDoc.data();
                 document.getElementById('app-title').textContent = moduleData.title;
                 const originalWords = moduleData.words;
-
                 mainContent.innerHTML = `<div class="text-center text-lg text-slate-600">Đang tải tiến độ học tập...</div>`;
                 const progressDoc = await db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId).get();
                 const progressData = progressDoc.exists ? progressDoc.data().moduleProgress?.[moduleId] : null;
 
-                if (progressData && progressData.words) {
-                    this.data.words = originalWords.map(originalWord => {
-                        const savedWord = progressData.words.find(w => w.id === originalWord.id);
-                        return { ...originalWord, isLearned: savedWord ? savedWord.isLearned : false };
-                    });
-                    this.data.skippedItems = progressData.skippedItems || [];
-                } else {
-                    this.data.words = originalWords.map(w => ({ ...w, isLearned: false }));
-                    this.data.skippedItems = [];
-                }
-
+                this.data.words = originalWords.map(originalWord => {
+                    const savedWord = progressData?.words?.find(w => w.id === originalWord.id);
+                    return { ...originalWord, isLearned: savedWord ? savedWord.isLearned : false };
+                });
+                this.data.skippedItems = progressData?.skippedItems || [];
+                this.data.testHistory = progressData?.testHistory || [];
+                
                 this.analyzeAndTagWords(); 
                 this.groupWordFamilies();
                 this.parseAndStoreStructures();
@@ -539,48 +291,38 @@
                         if (savedStruct) s.isLearned = savedStruct.isLearned;
                     });
                 }
-                 // [NEW] Load test history
-                if (progressData && progressData.testHistory) {
-                    this.data.testHistory = progressData.testHistory;
-                } else {
-                    this.data.testHistory = [];
-                }
             },
 
             async saveData() {
                 if (!userId || !assignmentId || !moduleId) return;
-
                 const progressRef = db.collection('student_progress').doc(userId).collection('assignments').doc(assignmentId);
                 const progressPayload = {
                     [`moduleProgress.${moduleId}`]: {
                         words: this.data.words.map(w => ({ id: w.id, isLearned: w.isLearned })),
                         structures: this.data.structures.map(s => ({ id: s.id, isLearned: s.isLearned })),
                         skippedItems: this.data.skippedItems,
-                        testHistory: this.data.testHistory || [],
+                        testHistory: this.data.testHistory,
                         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                     }
                 };
-                
                 await progressRef.set(progressPayload, { merge: true });
             },
             
             async markModuleAsCompleted() {
-                const learnedCount = this.data.words.filter(w => w.isLearned).length;
-                const totalCount = this.data.words.length;
+                const learnedWords = this.data.words.filter(w => w.isLearned).length;
+                const totalWords = this.data.words.length;
+                const learnedStructures = this.data.structures.filter(s => s.isLearned).length;
+                const totalStructures = this.data.structures.length;
                 const lastTest = this.data.testHistory?.length > 0 ? this.data.testHistory[this.data.testHistory.length - 1] : null;
 
-                if (learnedCount === totalCount && lastTest && lastTest.score >= 75) {
+                if (learnedWords === totalWords && learnedStructures === totalStructures && lastTest && lastTest.score >= 75) {
                     window.location.href = `assignment.html?id=${assignmentId}`;
                 } else {
-                    this.showCustomAlert("Bạn cần học 100% từ vựng và đạt trên 75% ở bài test gần nhất để hoàn thành.");
+                    this.showCustomAlert("Bạn cần học 100% từ vựng, cấu trúc và đạt trên 75% ở bài test gần nhất để hoàn thành.");
                 }
             },
 
-            // --- ALL OTHER FUNCTIONS (initTheme, renderDashboard, renderMCQ, etc.) ---
-            // This section contains the full, unchanged logic from your original file.
-            // No placeholders, 100% complete.
-            
-         initTheme() {
+            initTheme() {
                 const themeToggleBtn = document.getElementById('theme-toggle-btn');
                 const themeToggleIcon = document.getElementById('theme-toggle-icon');
                 const themeToggleText = document.getElementById('theme-toggle-text');
@@ -589,13 +331,11 @@
                 const applyTheme = (theme) => {
                     if (theme === 'dark') {
                         body.classList.add('dark');
-                        themeToggleIcon.classList.remove('fa-moon');
-                        themeToggleIcon.classList.add('fa-sun');
+                        themeToggleIcon.classList.replace('fa-moon', 'fa-sun');
                         themeToggleText.textContent = 'Light Mode';
                     } else {
                         body.classList.remove('dark');
-                        themeToggleIcon.classList.remove('fa-sun');
-                        themeToggleIcon.classList.add('fa-moon');
+                        themeToggleIcon.classList.replace('fa-sun', 'fa-moon');
                         themeToggleText.textContent = 'Dark Mode';
                     }
                 };
@@ -617,7 +357,6 @@
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 const sidebarNavButtons = document.querySelectorAll('#sidebar-nav .sidebar-nav-btn');
                 const appLayout = document.querySelector('.app-layout');
-
                 const toggleSidebar = () => {
                     if (window.innerWidth < 1024) {
                         document.body.classList.toggle('sidebar-open');
@@ -625,18 +364,11 @@
                         appLayout.classList.toggle('sidebar-collapsed');
                     }
                 };
-
-                if (menuToggleBtn) {
-                    menuToggleBtn.addEventListener('click', toggleSidebar);
-                }
-                if (sidebarOverlay) {
-                    sidebarOverlay.addEventListener('click', toggleSidebar);
-                }
+                if (menuToggleBtn) menuToggleBtn.addEventListener('click', toggleSidebar);
+                if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
                 sidebarNavButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
-                        if (window.innerWidth < 1024) {
-                            document.body.classList.remove('sidebar-open');
-                        }
+                        if (window.innerWidth < 1024) document.body.classList.remove('sidebar-open');
                     });
                 });
             },
@@ -645,14 +377,13 @@
                 document.getElementById('nav-dashboard').addEventListener('click', () => this.renderDashboard());
                 document.getElementById('nav-study').addEventListener('click', () => this.renderStudyTypeSelection());
                 document.getElementById('nav-practice').addEventListener('click', () => this.renderPracticeModeSelection());
-                document.getElementById('nav-test').addEventListener('click', () => {
-                    this.openModal('test-setup-modal');
-                });
+                document.getElementById('nav-test').addEventListener('click', () => this.openModal('test-setup-modal'));
                 document.getElementById('nav-reset').addEventListener('click', () => {
                     this.showCustomConfirm("Bạn có chắc muốn reset tiến độ học phần này không? Hành động này không thể hoàn tác.", async () => {
                         this.data.words.forEach(w => w.isLearned = false);
                         this.data.structures.forEach(s => s.isLearned = false);
                         this.data.skippedItems = [];
+                        this.data.testHistory = [];
                         await this.saveData(); 
                         this.renderDashboard();
                         this.showCustomAlert("Đã reset tiến độ học phần.");
@@ -660,22 +391,36 @@
                 });
             },
 
-            setActiveNav(navId) {
-                document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                const activeBtn = document.getElementById(navId);
-                if (activeBtn) {
-                    activeBtn.classList.add('active');
+            initModals() {
+                const wordModal = document.getElementById('word-list-modal');
+                const testModal = document.getElementById('test-setup-modal');
+                document.getElementById('close-word-modal-btn').onclick = () => this.closeModal('word-list-modal');
+                document.getElementById('close-test-modal-btn').onclick = () => this.closeModal('test-setup-modal');
+                window.onclick = (event) => {
+                    if (event.target == wordModal) this.closeModal('word-list-modal');
+                    if (event.target == testModal) this.closeModal('test-setup-modal');
                 }
+                document.getElementById('start-test-fixed-btn').addEventListener('click', () => {
+                    const count = document.getElementById('question-count').value;
+                    this.closeModal('test-setup-modal');
+                    this.startTest(parseInt(count));
+                });
+                document.getElementById('start-test-all-btn').addEventListener('click', () => {
+                    this.closeModal('test-setup-modal');
+                    this.startTest(-1);
+                });
+            },
+
+            setActiveNav(navId) {
+                document.querySelectorAll('.sidebar-nav-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(navId)?.classList.add('active');
             },
 
             updateHeader(title, subtitle) {
                 document.getElementById('app-title').textContent = title;
                 document.getElementById('app-subtitle').textContent = subtitle;
             },
-            
-            analyzeAndTagWords() {
+  analyzeAndTagWords() {
                 const tagMap = {
                     'ghen': ['emotion_negative'], 'tị': ['emotion_negative'], 'đối lập': ['concept'],
                     'hòa đồng': ['personality_positive'], 'thẳng thắn': ['personality_positive'], 'bộc trực': ['personality_positive'],
@@ -1849,7 +1594,6 @@ submitTest() {
                 return array;
             }
         };
-
         App.init();
     </script>
 </body>
