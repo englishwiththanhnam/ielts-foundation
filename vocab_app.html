@@ -248,12 +248,14 @@
                         moduleId = urlParams.get('vocabId');
                         
                         const backButton = document.getElementById('back-to-assignment-btn');
-                        backButton.href = `assignment.html?id=${assignmentId}`;
-                        backButton.addEventListener('click', async (e) => {
-                            e.preventDefault();
-                            await this.saveData();
-                            window.location.href = e.currentTarget.href;
-                        });
+                        if (backButton) {
+                            backButton.href = `assignment.html?id=${assignmentId}`;
+                            backButton.addEventListener('click', async (e) => {
+                                e.preventDefault();
+                                await this.saveData();
+                                window.location.href = backButton.href;
+                            });
+                        }
 
                         if (!assignmentId || !moduleId) {
                             document.getElementById('main-content').innerHTML = `<div class="card glass-panel text-center"><h1 class="text-2xl font-bold text-red-600">Lỗi: URL không hợp lệ.</h1><p class="mt-2 text-slate-600">Vui lòng quay lại trang bài tập và thử lại.</p></div>`;
