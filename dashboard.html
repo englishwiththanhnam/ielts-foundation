@@ -3,164 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng điều khiển - English with Thành Nam</title>
+    <title>Dashboard - English with Thành Nam</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Be Vietnam Pro', sans-serif; }
-    </style>
+    <link rel="stylesheet" href="styles/main.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
+    <div class="background-shapes">
+        <div class="shape shape1"></div>
+        <div class="shape shape2"></div>
+        <div class="shape shape3"></div>
+        <div class="shape shape4"></div>
+    </div>
 
-    <header class="bg-white shadow-md">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-indigo-600">English with Thành Nam</div>
+    <div class="app-layout">
+        <nav id="sidebar" class="glass-panel">
             <div>
-                <span id="user-display-name" class="text-gray-700 mr-4"></span>
-                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Đăng xuất</button>
+                <div class="text-center mb-10">
+                    <h1 class="text-2xl font-bold text-slate-800">Dashboard</h1>
+                    <p class="text-sm text-slate-600" id="user-display-name">Đang tải...</p>
+                </div>
+                <div id="sidebar-nav" class="flex-grow">
+                     <a href="dashboard.html" class="sidebar-nav-btn active">
+                        <i class="fas fa-home"></i>
+                        <span>Trang chủ</span>
+                    </a>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <button id="logout-button" class="sidebar-nav-btn w-full justify-center text-red-500 hover:bg-red-100 hover:text-red-700">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>Đăng xuất</span>
+                </button>
             </div>
         </nav>
-    </header>
-
-    <main class="container mx-auto px-6 py-8">
-        <div id="loading-state" class="text-center">
-            <p class="text-lg text-gray-600">Đang tải danh sách bài tập...</p>
-        </div>
-
-        <div id="main-content" class="hidden">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Bài tập về nhà</h1>
-            <div id="assignments-list" class="space-y-4">
-                </div>
-        </div>
-    </main>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script>
-        // Dán firebaseConfig của bạn vào đây
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRaRV5JEwXlHWSPSrCYxyIIPjDWFMsV9A",
-            authDomain: "ielts-foundation-6ea9d.firebaseapp.com",
-            projectId: "ielts-foundation-6ea9d",
-            storageBucket: "ielts-foundation-6ea9d.appspot.com",
-            messagingSenderId: "296690693780",
-            appId: "1:296690693780:web:f9a54a9ded68a73dcd2681"
-        };
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        <div id="sidebar-overlay"></div>
 
-        // DOM Elements
-        const loadingState = document.getElementById('loading-state');
-        const mainContent = document.getElementById('main-content');
-        const userDisplayName = document.getElementById('user-display-name');
-        const assignmentsList = document.getElementById('assignments-list');
-        const logoutButton = document.getElementById('logout-button');
-
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                userDisplayName.textContent = user.displayName || user.email;
-                await loadAssignments();
-                mainContent.classList.remove('hidden');
-                loadingState.classList.add('hidden');
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
-
-        async function loadAssignments() {
-            assignmentsList.innerHTML = '<p>Đang tải bài tập...</p>';
-            try {
-                // Lấy tất cả bài tập, sắp xếp theo ngày tạo mới nhất
-                const snapshot = await db.collection('assignments')
-                                         .orderBy('createdAt', 'desc')
-                                         .get();
-
-                if (snapshot.empty) {
-                    assignmentsList.innerHTML = '<div class="bg-white p-6 rounded-lg shadow text-center"><p class="text-gray-600">Tuyệt vời! Hiện tại không có bài tập nào.</p></div>';
-                    return;
-                }
-
-                let assignments = [];
-                snapshot.forEach(doc => {
-                    assignments.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Phân loại bài tập: còn hạn và quá hạn
-                const now = new Date();
-                const upcomingAssignments = [];
-                const pastAssignments = [];
-
-                assignments.forEach(assignment => {
-                    if (assignment.deadline.toDate() >= now) {
-                        upcomingAssignments.push(assignment);
-                    } else {
-                        pastAssignments.push(assignment);
-                    }
-                });
-
-                assignmentsList.innerHTML = ''; // Xóa thông báo đang tải
-
-                if (upcomingAssignments.length > 0) {
-                     assignmentsList.innerHTML += '<h2 class="text-xl font-semibold text-gray-700 mb-3">Bài tập cần làm</h2>';
-                     upcomingAssignments.forEach(assignment => {
-                        assignmentsList.appendChild(createAssignmentElement(assignment));
-                     });
-                }
-               
-                if (pastAssignments.length > 0) {
-                     assignmentsList.innerHTML += '<h2 class="text-xl font-semibold text-gray-700 mt-8 mb-3">Bài tập đã quá hạn</h2>';
-                     pastAssignments.forEach(assignment => {
-                        assignmentsList.appendChild(createAssignmentElement(assignment));
-                     });
-                }
-
-
-            } catch (error) {
-                console.error("Lỗi khi tải bài tập:", error);
-                assignmentsList.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi khi tải bài tập.</p>';
-            }
-        }
-
-        function createAssignmentElement(assignment) {
-            const deadline = assignment.deadline.toDate();
-            const createdAt = assignment.createdAt.toDate();
-            const isOverdue = new Date() > deadline;
-
-            const assignmentEl = document.createElement('a');
-            assignmentEl.href = `assignment.html?id=${assignment.id}`;
-            assignmentEl.className = `block bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-l-4 ${isOverdue ? 'border-gray-400 opacity-70' : 'border-indigo-500'}`;
-            
-            assignmentEl.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800">${assignment.title}</h3>
-                        <p class="text-sm text-gray-500 mt-1">
-                            Ngày giao: ${createdAt.toLocaleDateString('vi-VN')}
-                        </p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-semibold ${isOverdue ? 'text-gray-500' : 'text-red-600'}">
-                            Hạn chót: ${deadline.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                        <span class="mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full ${isOverdue ? 'text-gray-800 bg-gray-200' : 'text-yellow-800 bg-yellow-200'}">
-                            ${isOverdue ? 'Đã quá hạn' : 'Chưa làm'}
-                         </span>
-                    </div>
+        <main id="app">
+             <header class="main-header">
+                <button id="menu-toggle-btn" class="lg:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="text-left">
+                    <h1 id="welcome-title" class="text-3xl lg:text-4xl font-bold text-slate-800">Chào bạn,</h1>
+                    <p class="text-slate-600 mt-1 lg:mt-2">Đây là danh sách các bài tập của bạn.</p>
                 </div>
-            `;
-            return assignmentEl;
-        }
+            </header>
 
-        logoutButton.addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
-        });
-    </script>
+            <div id="main-content">
+                <div id="loading-state" class="text-center text-lg text-slate-600">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Đang tải danh sách bài tập...
+                </div>
+                <div id="assignments-list" class="space-y-6">
+                    <!-- Danh sách bài tập sẽ được chèn vào đây -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/app/dashboard.js"></script>
 </body>
 </html>
