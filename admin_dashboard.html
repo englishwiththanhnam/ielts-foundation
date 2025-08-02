@@ -14,6 +14,8 @@
         .sidebar-link.active { background-color: #4f46e5; color: white; font-weight: 600; }
         .list-item:hover { background-color: #f3f4f6; }
         .list-item.active { background-color: #eef2ff; border-color: #6366f1; }
+        .unit-header { cursor: pointer; }
+        .module-list { display: none; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -129,8 +131,7 @@ const firebaseConfig = {
                 db.collection('users').where('role', '==', 'student').get()
             ]);
             const classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const students = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+            
             let classListHtml = classes.map(c => `
                 <div class="list-item border-l-4 border-transparent p-3 cursor-pointer" data-class-id="${c.id}">
                     <p class="font-bold text-gray-800">${c.className}</p>
@@ -161,9 +162,8 @@ const firebaseConfig = {
             const classData = { id: classDoc.id, ...classDoc.data() };
             const allStudents = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            const studentIdsInClass = new Set(classData.studentIds || []);
-            const studentsInClass = allStudents.filter(s => studentIdsInClass.has(s.id));
-            const studentsNotInClass = allStudents.filter(s => !studentIdsInClass.has(s.id));
+            const studentsInClass = allStudents.filter(s => s.enrolledClasses && s.enrolledClasses.includes(classId));
+            const studentsNotInClass = allStudents.filter(s => !s.enrolledClasses || !s.enrolledClasses.includes(classId));
 
             let studentsInClassHtml = studentsInClass.map(s => `
                 <tr class="border-b">
@@ -185,7 +185,7 @@ const firebaseConfig = {
                 <h2 class="text-2xl font-bold mb-6">${classData.className}</h2>
                 <div class="grid grid-cols-2 gap-6">
                     <div>
-                        <h3 class="font-semibold mb-2">Học sinh trong lớp</h3>
+                        <h3 class="font-semibold mb-2">Học sinh trong lớp (${studentsInClass.length})</h3>
                         <table class="w-full text-sm">${studentsInClassHtml}</table>
                     </div>
                     <div>
@@ -284,16 +284,34 @@ const firebaseConfig = {
             
             const curriculumDoc = await db.collection('curriculums').doc(curriculumId).get();
             const curriculum = { id: curriculumDoc.id, ...curriculumDoc.data() };
-            const units = curriculum.units || {};
+            const modulesSnap = await db.collection('curriculums').doc(curriculumId).collection('modules').get();
+            const modules = modulesSnap.docs.map(doc => ({id: doc.id, ...doc.data()}));
 
-            let unitsHtml = Object.keys(units).map(unitKey => {
-                const unitModules = units[unitKey].map(module => `
-                    <li class="text-sm ml-4">${module.title} (${module.type})</li>
-                `).join('');
+            // Group modules by unit
+            const units = modules.reduce((acc, module) => {
+                const unit = module.unit || 'General';
+                if (!acc[unit]) {
+                    acc[unit] = [];
+                }
+                acc[unit].push(module);
+                return acc;
+            }, {});
+
+            let unitsHtml = Object.keys(units).sort().map(unitKey => {
+                const unitModules = units[unitKey].map(module => {
+                    const isSupplementary = module.isSupplementary;
+                    const colorClass = isSupplementary ? 'text-green-600' : 'text-blue-600';
+                    const icon = isSupplementary ? 'fa-star' : 'fa-book';
+                    return `
+                    <li class="text-sm ml-4 flex items-center justify-between">
+                        <span><i class="fas ${icon} ${colorClass} mr-2 text-xs"></i>${module.title} (${module.type})</span>
+                        <button class="text-red-500 text-xs opacity-50 hover:opacity-100">Xóa</button>
+                    </li>`;
+                }).join('');
                 return `
                     <div class="mt-2">
-                        <p class="font-semibold">${unitKey}</p>
-                        <ul>${unitModules}</ul>
+                        <p class="font-semibold unit-header bg-gray-100 p-2 rounded">${unitKey}</p>
+                        <ul class="module-list ml-4 mt-1 space-y-1">${unitModules}</ul>
                     </div>
                 `;
             }).join('');
@@ -386,14 +404,10 @@ const firebaseConfig = {
                 const classId = e.target.dataset.classId;
                 const isAdding = e.target.classList.contains('add-student-btn');
                 
-                const classRef = db.collection('classes').doc(classId);
                 const studentRef = db.collection('users').doc(studentId);
                 const operation = isAdding ? firebase.firestore.FieldValue.arrayUnion : firebase.firestore.FieldValue.arrayRemove;
 
-                await db.runTransaction(async (transaction) => {
-                    transaction.update(classRef, { studentIds: operation(studentId) });
-                    transaction.update(studentRef, { enrolledClasses: operation(classId) });
-                });
+                await studentRef.update({ enrolledClasses: operation(classId) });
                 await renderClassDetail(classId);
             }
             // Student Management: Add student to class
@@ -403,13 +417,9 @@ const firebaseConfig = {
                 const classId = selectEl.value;
                 if (!classId) return alert('Vui lòng chọn một lớp.');
 
-                const classRef = db.collection('classes').doc(classId);
                 const studentRef = db.collection('users').doc(studentId);
                 
-                await db.runTransaction(async (transaction) => {
-                    transaction.update(classRef, { studentIds: firebase.firestore.FieldValue.arrayUnion(studentId) });
-                    transaction.update(studentRef, { enrolledClasses: firebase.firestore.FieldValue.arrayUnion(classId) });
-                });
+                await studentRef.update({ enrolledClasses: firebase.firestore.FieldValue.arrayUnion(classId) });
                 await renderStudentManagement();
             }
             // Content Management: Select a curriculum
@@ -418,6 +428,13 @@ const firebaseConfig = {
                 const item = e.target.closest('.list-item[data-curriculum-id]');
                 item.classList.add('active');
                 await renderCurriculumDetail(item.dataset.curriculumId);
+            }
+            // Content Management: Toggle unit visibility
+            if (e.target.matches('.unit-header')) {
+                const moduleList = e.target.nextElementSibling;
+                if (moduleList) {
+                    moduleList.style.display = moduleList.style.display === 'block' ? 'none' : 'block';
+                }
             }
         });
 
